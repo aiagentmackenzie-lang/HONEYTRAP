@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-honeytrap-bg text-honeytrap-text font-sans;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-honeytrap-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-honeytrap-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-honeytrap-muted;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-honeytrap-card border border-honeytrap-border rounded-lg p-4 shadow-glow;
+  }
+
+  .glow-green {
+    box-shadow: 0 0 20px rgba(78, 204, 163, 0.2);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px rgba(232, 69, 69, 0.2);
+  }
+
+  .pulse-dot {
+    @apply w-2 h-2 rounded-full bg-honeytrap-green animate-pulse;
+  }
+
+  .pulse-dot-red {
+    @apply w-2 h-2 rounded-full bg-honeytrap-red animate-pulse;
+  }
+
+  .mono {
+    @apply font-mono text-sm;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}

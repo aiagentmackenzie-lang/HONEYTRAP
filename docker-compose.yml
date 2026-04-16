@@ -59,6 +59,13 @@ services:
       - api
       - ai-emulator
 
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8082:80"
+    depends_on:
+      - api
+
 volumes:
   pgdata:
   honeytrap-data:

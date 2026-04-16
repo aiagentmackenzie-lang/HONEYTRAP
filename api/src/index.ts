@@ -3,6 +3,8 @@ import dbPlugin from "./plugins/db.js";
 import sessionsRoute from "./routes/sessions.js";
 import eventsRoute from "./routes/events.js";
 import tokensRoute from "./routes/tokens.js";
+import wsPlugin from "./routes/ws.js";
+import analyticsPlugin from "./routes/analytics.js";
 
 async function buildServer() {
   const app = Fastify({
@@ -15,6 +17,8 @@ async function buildServer() {
   await app.register(sessionsRoute);
   await app.register(eventsRoute);
   await app.register(tokensRoute);
+  await app.register(wsPlugin);
+  await app.register(analyticsPlugin);
 
   app.get("/health", async () => ({ status: "ok", version: "0.2.0" }));
 

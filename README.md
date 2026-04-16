@@ -4,12 +4,12 @@
 
 ---
 
-## Status: Phase 2 COMPLETE 🕷️
+## Status: Phase 3 COMPLETE 🕸️
 
 - **Spec:** ✅ Complete (SPEC.md)
 - **Phase 1:** ✅ Core Engine — TCP/UDP listeners, SSH/HTTP/FTP emulators, CLI, PostgreSQL schema
 - **Phase 2:** ✅ AI Emulation + Tokens — Ollama AI, enhanced services, honeytokens, decoy docs
-- **Phase 3:** 🔲 Dashboard + Advanced Detection
+- **Phase 3:** ✅ Dashboard + Advanced Detection — React dashboard, D3 charts, WebSocket, behavioral analysis
 - **Phase 4:** 🔲 Hardening + Export + Docker
 
 ---
@@ -25,7 +25,7 @@ Deploy intelligent honeypots and deception assets to detect, track, and analyze 
 | Attribute | Value |
 |-----------|-------|
 | **Stack** | Go + Python + Docker + React + PostgreSQL |
-| **LOC** | ~3,500+ |
+| **LOC** | ~8,500+ |
 | **Phases** | 4 (Core → AI → Dashboard → Hardening) |
 | **GitHub** | `github.com/aiagentmackenzie-lang/HONEYTRAP` |
 | **Portfolio Gap** | Deception tech |
@@ -138,6 +138,31 @@ python server.py 8443
 │  7 Services: SSH, SSH+, HTTP, HTTP+, FTP, Redis, UDP │
 └──────────────────────────────────────────────────────┘
 ```
+
+## Dashboard (Phase 3)
+
+React + Vite + Tailwind + D3 cyberpunk dashboard:
+
+- **5 Pages:** Dashboard, Sessions, Tokens, Analytics, Settings
+- **12 Components:** StatsCards, SessionViewer, SessionDetail, AttackerMap, ServiceChart, TimelineChart, TokenList, TokenAlerts, EventLog, ServiceStatus, CredentialCapture, AIStatus
+- **Real-time:** WebSocket hook with auto-reconnect
+- **D3 Charts:** Bar chart (service attacks), area chart (24h timeline), world map (attacker geolocation)
+- **Dark Theme:** #0a0a1a background, #4ecca3 green accent, #e84545 alerts
+
+```bash
+cd dashboard && npm install && npm run dev
+# Dashboard runs at http://localhost:5173
+# Proxies /api to localhost:3000
+```
+
+## Behavioral Analysis (Phase 3)
+
+Go module for attacker profiling:
+
+- **IsScripted()** — Detects automated tools (uniform command intervals, CV < 0.3)
+- **IsHuman()** — Detects human attackers (variable timing, thinking pauses)
+- **ClassifyTool()** — Identifies nmap, hydra, metasploit, nikto, sqlmap, nuclei
+- **RiskScore()** — 0-1 risk score (6 factors: events, tool, scripted, duration, dangerous commands, login attempts)
 
 ---
 
