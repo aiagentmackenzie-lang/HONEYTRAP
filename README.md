@@ -4,13 +4,13 @@
 
 ---
 
-## Status: Phase 3 COMPLETE 🕸️
+## Status: ALL PHASES COMPLETE 🕸️🔥
 
 - **Spec:** ✅ Complete (SPEC.md)
 - **Phase 1:** ✅ Core Engine — TCP/UDP listeners, SSH/HTTP/FTP emulators, CLI, PostgreSQL schema
 - **Phase 2:** ✅ AI Emulation + Tokens — Ollama AI, enhanced services, honeytokens, decoy docs
 - **Phase 3:** ✅ Dashboard + Advanced Detection — React dashboard, D3 charts, WebSocket, behavioral analysis
-- **Phase 4:** 🔲 Hardening + Export + Docker
+- **Phase 4:** ✅ Hardening + Export — Deploy profiles, STIX export, alert integrations, seccomp, systemd
 
 ---
 
@@ -164,7 +164,50 @@ Go module for attacker profiling:
 - **ClassifyTool()** — Identifies nmap, hydra, metasploit, nikto, sqlmap, nuclei
 - **RiskScore()** — 0-1 risk score (6 factors: events, tool, scripted, duration, dangerous commands, login attempts)
 
+## Deploy Profiles (Phase 4)
+
+YAML-based deployment configurations:
+
+| Profile | Services | AI | Use Case |
+|---------|----------|----|----------|
+| **default** | All 7 | ✅ | Full deployment |
+| **minimal** | SSH + HTTP | ❌ | Lightweight |
+| **full-spectrum** | All 7 + PCAP | ✅ | Maximum deception |
+| **raspberry-pi** | SSH + Redis | ❌ | Low-resource devices |
+| **corporate-internal** | SSH + HTTP + FTP | ✅ | AD/Windows environment |
+
+```bash
+./honeytrap deploy default
+./honeytrap deploy minimal
+./honeytrap deploy raspberry-pi
+```
+
+## STIX Export (Phase 4)
+
+Export honeypot data as STIX 2.1 bundles for threat intel sharing:
+
+- Session data → observed-data + IPv4 address objects
+- Token access → indicator objects with confidence scores
+- Full STIX bundle with identity and relationship objects
+
+## Alert Integrations (Phase 4)
+
+Real-time alerts when attackers interact with honeypots:
+
+- **Slack** — Webhook-based alerts with severity emojis
+- **Telegram** — Bot API with Markdown formatting
+- **Email** — SMTP/agentmail integration (structure ready)
+- Severity levels: low → medium → high → critical
+
+## Hardening (Phase 4)
+
+- **Seccomp** — Whitelist profile (150+ allowed syscalls)
+- **Systemd** — Hardened service files (NoNewPrivileges, ProtectSystem, PrivateTmp)
+- **Docker** — Network isolation, read-only FS, resource limits
+- **Install script** — `sudo bash deploy/install.sh`
+
 ---
 
 **Created:** April 16, 2026  
-**Part of:** Raphael's Security Portfolio (21+ projects)
+**Part of:** Raphael's Security Portfolio (22+ projects) 
+**Total:** ~10,500 LOC | 90+ files | 4 phases complete

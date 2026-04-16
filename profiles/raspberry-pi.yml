@@ -1,0 +1,51 @@
+# HONEYTRAP Deploy Profile: Raspberry Pi
+# Lightweight — SSH + Redis only, no AI, minimal resources
+
+services:
+  ssh:
+    enabled: true
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_8.9p1 Raspbian-5"
+    max_sessions: 20
+
+  ssh_enhanced:
+    enabled: false
+
+  http:
+    enabled: false
+
+  http_enhanced:
+    enabled: false
+
+  ftp:
+    enabled: false
+
+  redis:
+    enabled: true
+    port: 6379
+    max_sessions: 10
+
+  udp:
+    enabled: false
+
+ai:
+  enabled: false
+  fallback: true
+
+alerts:
+  slack:
+    enabled: false
+  telegram:
+    enabled: true
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+  email:
+    enabled: false
+
+export:
+  stix_enabled: false
+  auto_export: false
+
+logging:
+  level: warn
+  pcap_capture: false

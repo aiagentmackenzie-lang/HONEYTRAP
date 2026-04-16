@@ -1,0 +1,75 @@
+# HONEYTRAP Deploy Profile: Corporate Internal
+# Internal network deception — realistic Windows/AD environment simulation
+
+services:
+  ssh:
+    enabled: true
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_7.4p1 Debian-10+deb10u7"
+    max_sessions: 100
+
+  ssh_enhanced:
+    enabled: true
+    port: 2223
+    banner: "SSH-2.0-OpenSSH_for_Windows_8.1"
+    ai_emulation: true
+    max_sessions: 50
+
+  http:
+    enabled: true
+    port: 8080
+    max_sessions: 100
+
+  http_enhanced:
+    enabled: true
+    port: 8443
+    ai_emulation: true
+    fake_login: true
+    fake_dashboard: true
+    fake_api: true
+    max_sessions: 50
+
+  ftp:
+    enabled: true
+    port: 2121
+    banner: "220 Microsoft FTP Service"
+    max_sessions: 30
+
+  redis:
+    enabled: false
+
+  udp:
+    enabled: false
+
+ai:
+  enabled: true
+  ollama_url: "http://localhost:11434"
+  model: "llama3.2:3b"
+  cache_size: 256
+  cache_ttl: 3600
+  fallback: true
+
+alerts:
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+  telegram:
+    enabled: false
+  email:
+    enabled: true
+    smtp_host: "${SMTP_HOST}"
+    smtp_port: 587
+    from: "honeytrap@corp.internal"
+    to: "${SOC_EMAIL}"
+    username: "${SMTP_USER}"
+    password: "${SMTP_PASS}"
+
+export:
+  stix_enabled: true
+  auto_export: true
+  export_interval: 900
+
+logging:
+  level: info
+  pcap_capture: true
+  pcap_dir: "/var/lib/honeytrap/pcap"

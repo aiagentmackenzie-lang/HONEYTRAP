@@ -71,14 +71,14 @@ func IsHuman(events []models.Event) bool {
 // ClassifyTool attempts to identify the attack tool based on command patterns.
 func ClassifyTool(events []models.Event) string {
 	signatures := map[string][]string{
-		"nmap":       {"nmap", "-sV", "-sS", "-O", "--script", "-p-"},
-		"hydra":      {"hydra", "-l", "-P", "-t", "password"},
+		"nmap":       {"nmap", "-sv", "-ss", "-o ", "--script", "-p-"},
+		"hydra":      {"hydra", "-l ", "-p ", "-t ", "password"},
 		"metasploit": {"msfconsole", "use exploit", "set payload", "meterpreter", "sessions -l"},
-		"nikto":      {"nikto", "-h", "-C", "all"},
+		"nikto":      {"nikto", "-h ", "-c ", "all"},
 		"sqlmap":     {"sqlmap", "--dbs", "--tables", "--dump", "--batch"},
-		"curl":       {"curl", "-X", "-H", "--data", "-o"},
-		"wget":       {"wget", "-O", "--no-check-certificate"},
-		"nuclei":     {"nuclei", "-t", "-severity", "-target"},
+		"curl":       {"curl", "-x ", "-h ", "--data", "-o "},
+		"wget":       {"wget", "-o ", "--no-check-certificate"},
+		"nuclei":     {"nuclei", "-t ", "-severity", "-target"},
 	}
 
 	commandText := ""

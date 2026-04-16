@@ -1,0 +1,82 @@
+# HONEYTRAP Deploy Profile: Full Spectrum
+# All services + AI + PCAP + alerts — maximum deception
+
+services:
+  ssh:
+    enabled: true
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+    max_sessions: 500
+
+  ssh_enhanced:
+    enabled: true
+    port: 2223
+    banner: "SSH-2.0-OpenSSH_9.3p1 Debian-1"
+    ai_emulation: true
+    max_sessions: 200
+
+  http:
+    enabled: true
+    port: 8080
+    max_sessions: 500
+
+  http_enhanced:
+    enabled: true
+    port: 8443
+    ai_emulation: true
+    fake_login: true
+    fake_dashboard: true
+    fake_api: true
+    max_sessions: 200
+
+  ftp:
+    enabled: true
+    port: 2121
+    banner: "220 Microsoft FTP Service"
+    max_sessions: 100
+
+  redis:
+    enabled: true
+    port: 6379
+    ai_emulation: true
+    max_sessions: 100
+
+  udp:
+    enabled: true
+    port: 9161
+    max_sessions: 100
+
+ai:
+  enabled: true
+  ollama_url: "http://localhost:11434"
+  model: "llama3.2:3b"
+  cache_size: 1024
+  cache_ttl: 1800
+  fallback: true
+
+alerts:
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+  telegram:
+    enabled: true
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+  email:
+    enabled: true
+    smtp_host: "${SMTP_HOST}"
+    smtp_port: 587
+    from: "honeytrap@alerts.local"
+    to: "${ALERT_EMAIL}"
+    username: "${SMTP_USER}"
+    password: "${SMTP_PASS}"
+
+export:
+  stix_enabled: true
+  auto_export: true
+  export_interval: 1800
+
+logging:
+  level: info
+  pcap_capture: true
+  pcap_dir: "/var/lib/honeytrap/pcap"

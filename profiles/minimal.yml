@@ -1,0 +1,49 @@
+# HONEYTRAP Deploy Profile: Minimal
+# Only SSH + HTTP, no AI — lightweight deployment
+
+services:
+  ssh:
+    enabled: true
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.1"
+    max_sessions: 50
+
+  ssh_enhanced:
+    enabled: false
+
+  http:
+    enabled: true
+    port: 8080
+    max_sessions: 100
+
+  http_enhanced:
+    enabled: false
+
+  ftp:
+    enabled: false
+
+  redis:
+    enabled: false
+
+  udp:
+    enabled: false
+
+ai:
+  enabled: false
+  fallback: true
+
+alerts:
+  slack:
+    enabled: false
+  telegram:
+    enabled: false
+  email:
+    enabled: false
+
+export:
+  stix_enabled: false
+  auto_export: false
+
+logging:
+  level: warn
+  pcap_capture: false
