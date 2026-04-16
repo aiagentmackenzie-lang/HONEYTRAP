@@ -22,7 +22,6 @@ type SessionContext struct {
 
 type PacketContext struct {
 	Context    context.Context
-	Session    models.Session
 	Service    string
 	RemoteAddr net.Addr
 	Payload    []byte
@@ -35,3 +34,6 @@ type Service interface {
 	HandleConn(*SessionContext) error
 	HandlePacket(*PacketContext) error
 }
+
+// BaseService provides a no-op base that embedded services can compose.
+type BaseService struct{}

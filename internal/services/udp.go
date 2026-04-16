@@ -1,8 +1,12 @@
 package services
 
-import "fmt"
+import (
+	"fmt"
 
-type UDPDecoyService struct{}
+	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
+)
+
+type UDPDecoyService struct{ BaseService }
 
 func NewUDPDecoyService() *UDPDecoyService {
 	return &UDPDecoyService{}
@@ -17,7 +21,12 @@ func (s *UDPDecoyService) HandleConn(*SessionContext) error {
 }
 
 func (s *UDPDecoyService) HandlePacket(ctx *PacketContext) error {
-	_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "udp.datagram", map[string]any{
+	_ = ctx.Recorder.Event(ctx.Context, models.Session{
+		ID:         "",
+		Service:    ctx.Service,
+		Protocol:   "udp",
+		RemoteAddr: ctx.RemoteAddr.String(),
+	}, "udp.datagram", map[string]any{
 		"size":            len(ctx.Payload),
 		"payload_preview": string(ctx.Payload),
 	})

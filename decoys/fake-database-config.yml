@@ -1,0 +1,22 @@
+# Production Database Configuration — RESTRICTED ACCESS
+production:
+  host: db-primary.internal.honeytrap.local
+  port: 5432
+  database: operations_prod
+  username: admin
+  password: "Pr0dAdm1n!2026#"
+  pool_size: 20
+  ssl: true
+
+staging:
+  host: db-replica.staging.internal.honeytrap.local
+  port: 5432
+  database: operations_staging
+  username: staging_admin
+  password: "St4g1ngP@ss!"
+  pool_size: 10
+
+redis:
+  host: cache.internal.honeytrap.local
+  port: 6379
+  password: "R3disPr0d#2026"

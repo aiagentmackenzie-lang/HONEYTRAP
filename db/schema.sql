@@ -74,3 +74,19 @@ CREATE INDEX IF NOT EXISTS idx_tokens_active_kind
   WHERE is_active = TRUE;
 
 COMMIT;
+
+-- Phase 2: Token Access Logging
+CREATE TABLE IF NOT EXISTS token_access_log (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  token_id UUID NOT NULL REFERENCES tokens(id) ON DELETE CASCADE,
+  source_ip INET NOT NULL,
+  user_agent TEXT,
+  accessed_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc', now()),
+  metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+);
+
+CREATE INDEX IF NOT EXISTS idx_token_access_log_token_id
+  ON token_access_log (token_id, accessed_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_token_access_log_source_ip
+  ON token_access_log (source_ip, accessed_at DESC);

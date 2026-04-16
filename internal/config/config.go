@@ -34,8 +34,11 @@ func Load() (Config, error) {
 		DefaultProfile: getenv("HONEYTRAP_PROFILE", "default"),
 		Services: []ServiceConfig{
 			{Name: "ssh", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_SSH_PORT", 2222)), Enabled: getenvBool("HONEYTRAP_ENABLE_SSH", true)},
+			{Name: "ssh-enhanced", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_SSH_ENHANCED_PORT", 2223)), Enabled: getenvBool("HONEYTRAP_ENABLE_SSH_ENHANCED", true)},
 			{Name: "http", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_HTTP_PORT", 8080)), Enabled: getenvBool("HONEYTRAP_ENABLE_HTTP", true)},
+			{Name: "http-enhanced", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_HTTP_ENHANCED_PORT", 8443)), Enabled: getenvBool("HONEYTRAP_ENABLE_HTTP_ENHANCED", true)},
 			{Name: "ftp", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_FTP_PORT", 2121)), Enabled: getenvBool("HONEYTRAP_ENABLE_FTP", true)},
+			{Name: "redis", Protocol: "tcp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_REDIS_PORT", 6379)), Enabled: getenvBool("HONEYTRAP_ENABLE_REDIS", true)},
 			{Name: "udp-decoy", Protocol: "udp", Address: fmt.Sprintf(":%d", getenvInt("HONEYTRAP_UDP_PORT", 9161)), Enabled: getenvBool("HONEYTRAP_ENABLE_UDP", true)},
 		},
 	}

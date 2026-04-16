@@ -27,10 +27,13 @@ func New(cfg config.Config, repo storage.Repository) *Engine {
 		repo:     repo,
 		sessions: NewSessionManager(repo),
 		services: map[string]services.Service{
-			"ssh":       services.NewSSHService(),
-			"http":      services.NewHTTPService(),
-			"ftp":       services.NewFTPService(),
-			"udp-decoy": services.NewUDPDecoyService(),
+			"ssh":           services.NewSSHService(),
+			"ssh-enhanced":  services.NewEnhancedSSHService(),
+			"http":          services.NewHTTPService(),
+			"http-enhanced": services.NewEnhancedHTTPService(),
+			"ftp":           services.NewFTPService(),
+			"redis":         services.NewRedisService(),
+			"udp-decoy":    services.NewUDPDecoyService(),
 		},
 	}
 }

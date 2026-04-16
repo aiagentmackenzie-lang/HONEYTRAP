@@ -97,7 +97,6 @@ func (e *Engine) handleUDP(ctx context.Context, cfg config.ServiceConfig, servic
 	_ = e.sessions.Event(ctx, session, "udp.received", map[string]any{"size": len(payload), "payload_preview": string(payload)})
 	_ = service.HandlePacket(&services.PacketContext{
 		Context:    ctx,
-		Session:    session,
 		Service:    cfg.Name,
 		RemoteAddr: addr,
 		Payload:    payload,

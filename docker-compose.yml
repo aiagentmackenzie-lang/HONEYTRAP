@@ -1,4 +1,4 @@
-version: "3.9"
+version: "3.8"
 
 services:
   postgres:
@@ -6,40 +6,59 @@ services:
     environment:
       POSTGRES_DB: honeytrap
       POSTGRES_USER: honeytrap
-      POSTGRES_PASSWORD: honeytrap
+      POSTGRES_PASSWORD: honeytrap_dev
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+      - pgdata:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U honeytrap"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  core:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    depends_on:
-      - postgres
+  api:
+    build: ./api
     environment:
-      HONEYTRAP_DATABASE_URL: postgres://honeytrap:honeytrap@postgres:5432/honeytrap?sslmode=disable
-      HONEYTRAP_DATA_DIR: /srv/honeytrap/var
+      DATABASE_URL: postgres://honeytrap:honeytrap_dev@postgres:5432/honeytrap
+      PORT: 3000
+      HOST: 0.0.0.0
+      LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  ai-emulator:
+    build: ./ai_emulator
+    environment:
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: llama3.2:3b
+    ports:
+      - "8443:8443"
+
+  honeytrap:
+    build: .
+    environment:
+      HONEYTRAP_DATA_DIR: /var/lib/honeytrap
+      HONEYTRAP_SSH_PORT: 2222
+      HONEYTRAP_HTTP_PORT: 8080
+      HONEYTRAP_FTP_PORT: 2121
+      HONEYTRAP_UDP_PORT: 9161
     ports:
       - "2222:2222"
       - "8080:8080"
       - "2121:2121"
       - "9161:9161/udp"
-    command: ["deploy", "default"]
-
-  api:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
+    volumes:
+      - honeytrap-data:/var/lib/honeytrap
     depends_on:
       - postgres
-    environment:
-      DATABASE_URL: postgres://honeytrap:honeytrap@postgres:5432/honeytrap?sslmode=disable
-      PORT: "3000"
-    ports:
-      - "3000:3000"
+      - api
+      - ai-emulator
 
 volumes:
-  postgres-data:
+  pgdata:
+  honeytrap-data:

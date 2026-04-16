@@ -1,81 +1,145 @@
 # HONEYTRAP
 
-AI-powered deception framework for capturing attacker behavior through believable low-interaction services, structured session telemetry, and a clean backend/API split.
+**AI-Powered Deception Framework** — Make Attackers Think They Won
 
-## Phase 1 Scope
+---
 
-Phase 1 delivers the core engine:
+## Status: Phase 2 COMPLETE 🕷️
 
-- Go honeypot runtime with TCP and UDP listener support
-- Service emulators for SSH, HTTP, and FTP
-- Session and event capture with timestamps, source addresses, and protocol details
-- PostgreSQL schema for sessions, events, and tokens
-- Fastify API scaffold with `GET /sessions` and `GET /events`
-- CLI workflow with `deploy`, `status`, `sessions`, `events`, and `version`
-- Docker and Compose assets for local demo deployment
+- **Spec:** ✅ Complete (SPEC.md)
+- **Phase 1:** ✅ Core Engine — TCP/UDP listeners, SSH/HTTP/FTP emulators, CLI, PostgreSQL schema
+- **Phase 2:** ✅ AI Emulation + Tokens — Ollama AI, enhanced services, honeytokens, decoy docs
+- **Phase 3:** 🔲 Dashboard + Advanced Detection
+- **Phase 4:** 🔲 Hardening + Export + Docker
 
-## Layout
+---
 
-```text
-cmd/honeytrap          Go CLI entrypoint
-internal/app           App wiring
-internal/cli           Command handlers
-internal/config        Environment-driven configuration
-internal/engine        Listener engine and session manager
-internal/services      SSH, HTTP, FTP, and UDP decoy services
-internal/storage       Storage abstraction and local JSONL repository
-db/schema.sql          PostgreSQL schema
-api/                   Fastify TypeScript API
-docs/                  Architecture notes
-```
+## Purpose
 
-## Running The Core Engine
+Deploy intelligent honeypots and deception assets to detect, track, and analyze attackers in real-time. Complements GHOSTWIRE (network forensics), HATCHERY (malware sandbox), and DEADDROP (digital forensics).
+
+---
+
+## Quick Specs
+
+| Attribute | Value |
+|-----------|-------|
+| **Stack** | Go + Python + Docker + React + PostgreSQL |
+| **LOC** | ~3,500+ |
+| **Phases** | 4 (Core → AI → Dashboard → Hardening) |
+| **GitHub** | `github.com/aiagentmackenzie-lang/HONEYTRAP` |
+| **Portfolio Gap** | Deception tech |
+
+---
+
+## Services (Phase 2)
+
+| Service | Port | Protocol | Description |
+|---------|------|----------|-------------|
+| SSH | 2222 | TCP | Basic SSH banner capture |
+| SSH Enhanced | 2223 | TCP | Full banner exchange, kex capture |
+| HTTP | 8080 | TCP | Basic fake admin panel |
+| HTTP Enhanced | 8443 | TCP | Full login pages, dashboard, API endpoints |
+| FTP | 2121 | TCP | Fake file listings (payroll.csv, backups) |
+| Redis | 6379 | TCP | Plausible keys with tempting names |
+| UDP Decoy | 9161 | UDP | Generic UDP capture |
+
+---
+
+## AI Emulator (Phase 2)
+
+The Python AI emulator uses Ollama for dynamic response generation:
+
+- **Endpoint:** `POST /ai-response` — Generate dynamic service responses
+- **Health:** `GET /ai/health` — Check Ollama connectivity
+- **Cache:** `GET /ai/cache` — Response cache statistics
+- **Intent Classification:** Automatically classifies attacker intent (recon, exploitation, lateral movement)
+- **Fallback:** Static responses when Ollama is unavailable
+
+---
+
+## Honeytokens (Phase 2)
+
+Generate and track fake credentials to detect unauthorized access:
+
+- **API Keys:** `sk-proj-htk-...` (OpenAI-style)
+- **AWS Credentials:** `AKIA...` (AWS-style)
+- **Database URLs:** `postgres://admin:password@db.internal...`
+- **Document URLs:** `https://internal.honeytrap.local/docs/...`
+
+### Decoy Documents
+
+- `decoys/fake-aws-credentials.json` — Planted AWS keys
+- `decoys/fake-database-config.yml` — Fake DB config with passwords
+- `decoys/fake-api-key.env` — Planted environment variables
+
+---
+
+## Build & Run
 
 ```bash
+# Build the Go binary
 go build ./cmd/honeytrap
+
+# Check status
 ./honeytrap status
+
+# Deploy honeypot
 ./honeytrap deploy default
+
+# View sessions
+./honeytrap sessions
+
+# View events
+./honeytrap events
+
+# Manage tokens
+./honeytrap tokens
 ```
 
-Default listeners:
-
-- `2222/tcp` SSH emulator
-- `8080/tcp` HTTP emulator
-- `2121/tcp` FTP emulator
-- `9161/udp` UDP decoy listener
-
-Captured sessions and events are stored locally under `var/` in JSONL format during offline development builds.
-
-## API
-
-The API lives in [`api`](./api) and is designed to run against PostgreSQL using `db/schema.sql`.
+### Docker
 
 ```bash
-cd api
-npm install
-npm run dev
+docker-compose up -d
 ```
 
-Endpoints:
-
-- `GET /sessions`
-- `GET /events`
-- `GET /health`
-
-## Docker
+### AI Emulator (Python)
 
 ```bash
-docker compose up --build
+cd ai_emulator
+pip install -r requirements.txt
+python server.py 8443
 ```
 
-This brings up:
+---
 
-- PostgreSQL with schema initialization
-- The Go core engine
-- The Fastify API service
+## Architecture
 
-## Notes
+```
+┌─────────────────────────────────────────────────────┐
+│                   HONEYTRAP CLI                     │
+│        (deploy, status, sessions, tokens)           │
+└─────────────────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────┐
+│                 Fastify API Server                  │
+│    (sessions, events, tokens, AI-response)          │
+└─────────────────────────────────────────────────────┘
+           │                    │                    │
+           ▼                    ▼                    ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  Honeypot Engine │  │  Token Manager   │  │  AI Emulator     │
+│  (Go + Docker)   │  │  (PostgreSQL)    │  │  (Ollama + Python)│
+└──────────────────┘  └──────────────────┘  └──────────────────┘
+           │
+           ▼
+┌──────────────────────────────────────────────────────┐
+│  7 Services: SSH, SSH+, HTTP, HTTP+, FTP, Redis, UDP │
+└──────────────────────────────────────────────────────┘
+```
 
-- The Go runtime is dependency-light and compiles with the standard library.
-- In this sandboxed offline environment, PostgreSQL and Fastify packages are scaffolded but not installed locally.
-- The schema and API are ready for runtime wiring once dependencies are installed in a connected environment.
+---
+
+**Created:** April 16, 2026  
+**Part of:** Raphael's Security Portfolio (21+ projects)
