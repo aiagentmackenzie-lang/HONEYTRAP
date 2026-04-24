@@ -66,7 +66,7 @@ func (m *Manager) SendAlert(alert Alert) error {
 // SessionAlert creates an alert from a new session.
 func (m *Manager) SessionAlert(session models.Session) Alert {
 	severity := "medium"
-	if session.Service == "ssh_enhanced" || session.Service == "http_enhanced" {
+	if session.Service == "ssh-enhanced" || session.Service == "http-enhanced" {
 		severity = "high"
 	}
 

@@ -1,3 +1,16 @@
-.gocache/
+# Binaries
 honeytrap
+*.exe
+
+# Go cache
+.gocache/
+
+# Dashboard build artifacts & deps
+dashboard/dist/
+dashboard/node_modules/
+
+# Data files
 var/
+
+# OS
+.DS_Store

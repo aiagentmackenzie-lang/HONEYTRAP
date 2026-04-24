@@ -35,8 +35,9 @@ type Token struct {
 }
 
 type ServiceStatus struct {
-	Name     string
-	Protocol string
-	Address  string
-	Enabled  bool
+	Name        string
+	Protocol    string
+	Address     string
+	Enabled     bool
+	ActiveConns int64
 }

@@ -26,7 +26,7 @@ func (s *FTPService) HandleConn(ctx *SessionContext) error {
 
 	_ = ctx.Conn.SetDeadline(time.Now().Add(ctx.Deadline))
 	reader := bufio.NewReader(ctx.Conn)
-	if _, err := fmt.Fprint(ctx.Conn, "220 HONEYTRAP FTP Service ready\r\n"); err != nil {
+	if _, err := fmt.Fprint(ctx.Conn, "220 vsftpd 3.0.5\r\n"); err != nil {
 		return err
 	}
 

@@ -7,7 +7,7 @@ import (
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
 )
 
-var ErrPostgresDriverUnavailable = errors.New("postgres driver unavailable in offline build; use schema.sql with the Fastify API runtime")
+var ErrPostgresDriverUnavailable = errors.New("postgres driver unavailable: the Go binary uses in-memory storage by default. For PostgreSQL, use the Fastify API server (api/) which has full pg support")
 
 type PostgresRepository struct{}
 

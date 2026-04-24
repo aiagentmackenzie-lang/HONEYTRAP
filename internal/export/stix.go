@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
+
+	"github.com/google/uuid"
 )
 
 // STIXBundle represents a STIX 2.1 bundle for threat intel sharing.
@@ -172,12 +174,5 @@ func (e *STIXExporter) writeBundle(bundle STIXBundle) (string, error) {
 }
 
 func generateID() string {
-	return fmt.Sprintf("%x", time.Now().UnixNano())
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return uuid.New().String()
 }

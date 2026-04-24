@@ -85,10 +85,3 @@ func (s *EnhancedSSHService) HandleConn(ctx *SessionContext) error {
 func (s *EnhancedSSHService) HandlePacket(*PacketContext) error {
 	return nil
 }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

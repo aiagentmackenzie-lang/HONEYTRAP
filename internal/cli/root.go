@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"text/tabwriter"
 
+	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/engine"
 )
 
@@ -34,6 +35,8 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 			profile = args[1]
 		}
 		return r.deploy(ctx, profile)
+	case "profiles":
+		return r.listProfiles()
 	case "status":
 		return r.status()
 	case "sessions":
@@ -43,7 +46,7 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 		limit := parseLimit(args[1:])
 		return r.events(ctx, limit)
 	case "version":
-		fmt.Println("honeytrap phase1")
+		fmt.Println("honeytrap v0.4.0")
 		return nil
 	case "help", "--help", "-h":
 		return r.help()
@@ -52,18 +55,49 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 	}
 }
 
-func (r *Runner) deploy(ctx context.Context, profile string) error {
-	fmt.Printf("Deploying HONEYTRAP profile %q\n", profile)
+func (r *Runner) deploy(ctx context.Context, profileName string) error {
+	// Try to load and apply deploy profile
+	profile, err := config.LoadProfile(profileName)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "honeytrap: warning: %v (using env config)\n", err)
+	} else {
+		fmt.Printf("Deploying HONEYTRAP profile %q\n", profileName)
+		// Log profile details
+		for name, svc := range profile.Services {
+			if svc.Enabled {
+				fmt.Printf("  ✓ %s (port %d)\n", name, svc.Port)
+			}
+		}
+		if profile.AI.Enabled {
+			fmt.Printf("  ✓ AI emulation (model=%s)\n", profile.AI.Model)
+		}
+		if profile.Logging.PCAPCapture {
+			fmt.Printf("  ✓ PCAP capture enabled\n")
+		}
+	}
+
 	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
 	return r.engine.Run(runCtx)
 }
 
+func (r *Runner) listProfiles() error {
+	names, err := config.ListProfiles()
+	if err != nil {
+		return err
+	}
+	fmt.Println("Available profiles:")
+	for _, name := range names {
+		fmt.Printf("  %s\n", name)
+	}
+	return nil
+}
+
 func (r *Runner) status() error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
-	fmt.Fprintln(w, "SERVICE\tPROTOCOL\tADDRESS\tENABLED")
+	fmt.Fprintln(w, "SERVICE\tPROTOCOL\tADDRESS\tENABLED\tACTIVE")
 	for _, status := range r.engine.Status() {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%t\n", status.Name, status.Protocol, status.Address, status.Enabled)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%t\t%d\n", status.Name, status.Protocol, status.Address, status.Enabled, status.ActiveConns)
 	}
 	return w.Flush()
 }
@@ -85,10 +119,11 @@ func (r *Runner) events(ctx context.Context, limit int) error {
 }
 
 func (r *Runner) help() error {
-	_, err := fmt.Fprintln(os.Stdout, `HONEYTRAP Phase 1 CLI
+	_, err := fmt.Fprintln(os.Stdout, `HONEYTRAP — AI-Powered Deception Framework
 
 Commands:
   deploy [profile]   Start the core honeypot engine
+  profiles           List available deploy profiles
   status             Show configured listeners
   sessions [limit]   Print recent captured sessions as JSON
   events [limit]     Print recent captured events as JSON

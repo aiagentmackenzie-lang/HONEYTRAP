@@ -5,13 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	
+	"strconv"
 	"strings"
 	"time"
 )
 
 // RedisService emulates a Redis server that responds to common
 // Redis commands with plausible data, including fake sensitive keys.
+// It properly parses the RESP (REdis Serialization Protocol) so it
+// works with redis-cli and all standard Redis client libraries.
 type RedisService struct {
 	BaseService
 }
@@ -31,29 +33,54 @@ func (s *RedisService) HandleConn(ctx *SessionContext) error {
 	reader := bufio.NewReader(ctx.Conn)
 
 	for {
-		line, err := reader.ReadString('\n')
+		// Parse RESP protocol — real Redis clients always send RESP-encoded commands
+		cmd, args, err := readRESPCommand(reader)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
 			}
-			return err
-		}
-
-		command := strings.TrimSpace(line)
-		if command == "" {
+			// If RESP parsing fails, try inline command (for netcat/manual testing)
+			line, lineErr := reader.ReadString('\n')
+			if lineErr != nil {
+				if errors.Is(lineErr, io.EOF) {
+					return nil
+				}
+				return lineErr
+			}
+			command := strings.TrimSpace(line)
+			if command == "" {
+				continue
+			}
+			_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.command", map[string]any{
+				"command": command,
+				"protocol": "inline",
+			})
+			response := handleRedisCommand(command)
+			if _, err := fmt.Fprint(ctx.Conn, response); err != nil {
+				return err
+			}
+			if strings.EqualFold(command, "QUIT") {
+				return nil
+			}
 			continue
 		}
 
-		_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.command", map[string]any{
-			"command": command,
-		})
+		// Record the full command with args
+		eventPayload := map[string]any{
+			"command":  cmd,
+			"protocol": "resp",
+		}
+		if len(args) > 0 {
+			eventPayload["args"] = args
+		}
+		_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.command", eventPayload)
 
-		response := handleRedisCommand(command)
+		response := dispatchRedisCommand(cmd, args)
 		if _, err := fmt.Fprint(ctx.Conn, response); err != nil {
 			return err
 		}
 
-		if strings.EqualFold(command, "QUIT") {
+		if strings.EqualFold(cmd, "QUIT") {
 			return nil
 		}
 	}
@@ -63,11 +90,146 @@ func (s *RedisService) HandlePacket(*PacketContext) error {
 	return nil
 }
 
-// handleRedisCommand returns plausible Redis protocol responses
+// ─── RESP Protocol Parser ─────────────────────────────────────────────────────
+
+// readRESPCommand reads one RESP-encoded command from the stream.
+// Returns the command name and its arguments, or an error if the stream
+// doesn't look like RESP.
+func readRESPCommand(reader *bufio.Reader) (string, []string, error) {
+	// Peek at the first byte to see if this is RESP
+	b, err := reader.ReadByte()
+	if err != nil {
+		return "", nil, err
+	}
+
+	if b != '*' {
+		// Not RESP — put byte back and return error (caller falls back to inline)
+		_ = reader.UnreadByte()
+		return "", nil, fmt.Errorf("not RESP protocol")
+	}
+
+	// Read array length
+	line, err := reader.ReadString('\n')
+	if err != nil {
+		return "", nil, err
+	}
+	count, err := strconv.Atoi(strings.TrimSpace(line))
+	if err != nil || count <= 0 {
+		return "", nil, fmt.Errorf("invalid RESP array length: %q", line)
+	}
+
+	// Read each element
+	elements := make([]string, 0, count)
+	for i := 0; i < count; i++ {
+		prefix, err := reader.ReadByte()
+		if err != nil {
+			return "", nil, err
+		}
+		if prefix != '$' {
+			return "", nil, fmt.Errorf("expected '$' prefix for bulk string, got '%c'", prefix)
+		}
+
+		lenLine, err := reader.ReadString('\n')
+		if err != nil {
+			return "", nil, err
+		}
+		length, err := strconv.Atoi(strings.TrimSpace(lenLine))
+		if err != nil {
+			return "", nil, fmt.Errorf("invalid bulk string length: %q", lenLine)
+		}
+		if length < 0 {
+			// Null bulk string
+			elements = append(elements, "")
+			continue
+		}
+
+		data := make([]byte, length+2) // +2 for \r\n
+		if _, err := io.ReadFull(reader, data); err != nil {
+			return "", nil, err
+		}
+		elements = append(elements, string(data[:length]))
+	}
+
+	if len(elements) == 0 {
+		return "", nil, fmt.Errorf("empty RESP command")
+	}
+
+	return elements[0], elements[1:], nil
+}
+
+// ─── Command Dispatch ─────────────────────────────────────────────────────────
+
+// dispatchRedisCommand handles RESP-parsed commands with separate args.
+func dispatchRedisCommand(cmd string, args []string) string {
+	upper := strings.ToUpper(cmd)
+
+	switch upper {
+	case "PING":
+		if len(args) > 0 {
+			return "$" + fmt.Sprintf("%d", len(args[0])) + "\r\n" + args[0] + "\r\n"
+		}
+		return "+PONG\r\n"
+	case "INFO":
+		return redisInfo()
+	case "COMMAND":
+		// redis-cli sends COMMAND DOCS on connect
+		return "*0\r\n"
+	case "DBSIZE":
+		return ":847\r\n"
+	case "KEYS":
+		pattern := "*"
+		if len(args) > 0 {
+			pattern = args[0]
+		}
+		if pattern == "*" {
+			return redisKeys()
+		}
+		return "*0\r\n"
+	case "GET":
+		if len(args) > 0 {
+			return redisGet(args[0])
+		}
+		return "-ERR wrong number of arguments for 'get' command\r\n"
+	case "SET":
+		return "+OK\r\n"
+	case "AUTH":
+		return "+OK\r\n"
+	case "SELECT":
+		return "+OK\r\n"
+	case "CONFIG":
+		if len(args) > 0 && strings.ToUpper(args[0]) == "GET" {
+			return redisConfig()
+		}
+		return "-ERR unknown subcommand for CONFIG\r\n"
+	case "CLIENT":
+		if len(args) > 0 && strings.ToUpper(args[0]) == "LIST" {
+			return redisClientList()
+		}
+		return "+OK\r\n"
+	case "FLUSHALL", "FLUSHDB":
+		return "+OK\r\n"
+	case "DEL":
+		return ":1\r\n"
+	case "EXISTS":
+		return ":1\r\n"
+	case "TYPE":
+		return "+string\r\n"
+	case "TTL":
+		return ":-1\r\n"
+	case "HELLO":
+		// RESP3 handshake — respond with minimal HELLO
+		return "%7\r\n$6\r\nserver\r\n$5\r\nredis\r\n$7\r\nversion\r\n$5\r\n7.2.3\r\n$5\r\nproto\r\n:2\r\n$2\r\nid\r\n:42\r\n$4\r\nmode\r\n$10\r\nstandalone\r\n"
+	case "QUIT":
+		return "+OK\r\n"
+	default:
+		return "-ERR unknown command '" + cmd + "'\r\n"
+	}
+}
+
+// handleRedisCommand handles inline (newline-delimited) commands for netcat users.
 func handleRedisCommand(cmd string) string {
 	upper := strings.ToUpper(strings.TrimSpace(cmd))
 
-	// RESP protocol responses
 	switch {
 	case strings.HasPrefix(upper, "PING"):
 		return "+PONG\r\n"
@@ -76,13 +238,13 @@ func handleRedisCommand(cmd string) string {
 	case strings.HasPrefix(upper, "KEYS *"), strings.HasPrefix(upper, "KEYS *"):
 		return redisKeys()
 	case strings.HasPrefix(upper, "DBSIZE"):
-		return ":847\r\n" // 847 keys — looks like real usage
+		return ":847\r\n"
 	case strings.HasPrefix(upper, "GET "):
 		return redisGet(strings.TrimPrefix(upper, "GET "))
 	case strings.HasPrefix(upper, "SET "):
 		return "+OK\r\n"
 	case strings.HasPrefix(upper, "AUTH "):
-		return "+OK\r\n" // Accept any password
+		return "+OK\r\n"
 	case strings.HasPrefix(upper, "SELECT "):
 		return "+OK\r\n"
 	case strings.HasPrefix(upper, "CONFIG GET "):
@@ -97,6 +259,8 @@ func handleRedisCommand(cmd string) string {
 		return "-ERR unknown command '" + cmd + "'\r\n"
 	}
 }
+
+// ─── Fake Data Responses ──────────────────────────────────────────────────────
 
 func redisInfo() string {
 	return "$" + fmt.Sprintf("%d", len(redisInfoString)) + "\r\n" + redisInfoString + "\r\n"
@@ -123,7 +287,6 @@ maxmemory:0
 db0:keys=847,expires=23,avg_ttl=3600000`
 
 func redisKeys() string {
-	// Return tempting key names
 	keys := []string{
 		"session:admin:token",
 		"config:database:url",
@@ -144,13 +307,12 @@ func redisKeys() string {
 }
 
 func redisGet(key string) string {
-	// Return plausible values for tempting keys
 	values := map[string]string{
-		"session:admin:token":       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.honeytrap",
-		"config:database:url":      "postgres://admin:s3cret@db.internal:5432/operations",
-		"secret:api:key:production": "sk-proj-htk-REDACTED-DECOY",
-		"backup:s3:credentials":    "AKIAHTKDECOY/wJalrXUtnFEMI/DECOY",
-		"auth:ldap:bind_password":  "BindPassword123!",
+		"session:admin:token":       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.0ps3c",
+		"config:database:url":       "postgres://admin:s3cret@db.primary.internal.ops:5432/operations",
+		"secret:api:key:production": "sk-proj-REDACTED-DECOY",
+		"backup:s3:credentials":    "AKIADECOY/wJalrXUtnFEMI/DECOY",
+		"auth:ldap:bind_password":   "BindPassword123!",
 	}
 	if val, ok := values[strings.TrimSpace(key)]; ok {
 		return "$" + fmt.Sprintf("%d", len(val)) + "\r\n" + val + "\r\n"

@@ -3,7 +3,7 @@ import { FastifyPluginCallback } from "fastify";
 const analyticsPlugin: FastifyPluginCallback = async (app, _opts) => {
   // GET /analytics — aggregated attack data
   app.get("/analytics", async (req, reply) => {
-    const db = app.pg;
+    const db = app.db;
 
     try {
       // Top attacker IPs

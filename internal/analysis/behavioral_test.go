@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -130,7 +131,7 @@ func TestRiskScore_Bounded(t *testing.T) {
 	events := make([]models.Event, 100)
 	for i := range events {
 		events[i] = models.Event{
-			ID:         string(rune(i)),
+			ID:         fmt.Sprintf("evt-%d", i),
 			SessionID:  "s-3",
 			Type:       "command",
 			OccurredAt: base.Add(time.Duration(i) * time.Second),

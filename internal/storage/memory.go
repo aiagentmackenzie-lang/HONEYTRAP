@@ -13,6 +13,14 @@ import (
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
 )
 
+const (
+	// MaxEventsInMemory caps the in-memory event list to prevent unbounded growth.
+	// Oldest events are evicted when the cap is hit.
+	MaxEventsInMemory = 10000
+	// MaxSessionsInMemory caps the in-memory session list.
+	MaxSessionsInMemory = 5000
+)
+
 type MemoryRepository struct {
 	mu          sync.RWMutex
 	sessions    []models.Session
@@ -40,6 +48,12 @@ func (r *MemoryRepository) CreateSession(_ context.Context, session models.Sessi
 	defer r.mu.Unlock()
 
 	r.sessions = append(r.sessions, session)
+
+	// Evict oldest sessions if over cap
+	if len(r.sessions) > MaxSessionsInMemory {
+		r.sessions = r.sessions[len(r.sessions)-MaxSessionsInMemory:]
+	}
+
 	return appendJSONL(r.sessionPath, session)
 }
 
@@ -62,6 +76,12 @@ func (r *MemoryRepository) RecordEvent(_ context.Context, event models.Event) er
 	defer r.mu.Unlock()
 
 	r.events = append(r.events, event)
+
+	// Evict oldest events if over cap
+	if len(r.events) > MaxEventsInMemory {
+		r.events = r.events[len(r.events)-MaxEventsInMemory:]
+	}
+
 	return appendJSONL(r.eventPath, event)
 }
 
@@ -88,6 +108,15 @@ func (r *MemoryRepository) load() error {
 	if err := loadJSONL(r.eventPath, &r.events); err != nil {
 		return err
 	}
+
+	// Trim to caps on load (in case the JSONL files grew beyond limits)
+	if len(r.sessions) > MaxSessionsInMemory {
+		r.sessions = r.sessions[len(r.sessions)-MaxSessionsInMemory:]
+	}
+	if len(r.events) > MaxEventsInMemory {
+		r.events = r.events[len(r.events)-MaxEventsInMemory:]
+	}
+
 	return nil
 }
 

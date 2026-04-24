@@ -95,10 +95,10 @@ func (g *Generator) generateValue(kind Kind) string {
 		return prefix + randomPart[:16]
 	case KindDatabase:
 		// Looks like a database connection string placeholder
-		return fmt.Sprintf("postgres://admin:%s@db.internal.honeytrap:5432/secrets", randomPart[:24])
+		return fmt.Sprintf("postgres://admin:%s@db.primary.internal.ops:5432/secrets", randomPart[:24])
 	case KindDocument:
 		// Looks like a document URL
-		return fmt.Sprintf("https://internal.honeytrap.local/docs/%s", randomPart[:16])
+		return fmt.Sprintf("https://docs.internal.ops.local/%s", randomPart[:16])
 	case KindAWSCreds:
 		// Looks like AWS access key ID (AKIA + 16 uppercase alphanumeric)
 		chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"

@@ -120,7 +120,7 @@ func TestE2E_AlertManager(t *testing.T) {
 
 	session := models.Session{
 		ID:        "s-alert-1",
-		Service:   "ssh_enhanced",
+		Service:   "ssh-enhanced",
 		RemoteIP:  "185.220.101.1",
 		StartedAt: time.Now(),
 	}

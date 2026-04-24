@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -38,9 +39,9 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 			}
 			return err
 		}
-		defer req.Body.Close()
 
 		body, _ := io.ReadAll(io.LimitReader(req.Body, 16384))
+		req.Body.Close() // close inside loop, not defer — prevents FD leak
 
 		// Capture POST data (credentials)
 		event := map[string]any{
@@ -54,12 +55,13 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 			event["body"] = string(body)
 			event["content_type"] = req.Header.Get("Content-Type")
 
-			// Extract form credentials
+			// Extract form credentials from already-read body (can't use ParseForm after ReadAll)
 			if strings.Contains(req.Header.Get("Content-Type"), "form") {
-				if err := req.ParseForm(); err == nil {
-					if username := req.FormValue("username"); username != "" {
+				parsed, parseErr := url.ParseQuery(string(body))
+				if parseErr == nil {
+					if username := parsed.Get("username"); username != "" {
 						event["captured_username"] = username
-						event["captured_password"] = req.FormValue("password")
+						event["captured_password"] = parsed.Get("password")
 					}
 				}
 			}
@@ -238,15 +240,15 @@ func fakeConfigPage() string {
 <body style="font-family:monospace;background:#1e1e1e;color:#d4d4d4;padding:20px;">
 <h1>⚙️ System Configuration</h1>
 <pre>
-# /etc/honeytrap/config.yml
+# /etc/operations/config.yml
 server:
   host: 0.0.0.0
   port: 443
   ssl: true
-  certificate: /etc/ssl/honeytrap.crt
+  certificate: /etc/ssl/server.crt
 
 database:
-  host: db.internal.honeytrap.local
+  host: db.primary.internal.ops.local
   port: 5432
   name: operations
   user: admin
@@ -254,13 +256,13 @@ database:
 
 auth:
   method: ldap
-  server: ldap.internal.honeytrap.local
-  base_dn: dc=honeytrap,dc=local
+  server: ldap.internal.ops.local
+  base_dn: dc=ops,dc=local
 
 monitoring:
   enabled: true
-  endpoint: https://metrics.internal.honeytrap.local
-  api_key: sk-proj-htk-REDACTED
+  endpoint: https://metrics.internal.ops.local
+  api_key: sk-proj-REDACTED
 </pre>
 </body></html>`
 }

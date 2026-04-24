@@ -1,10 +1,12 @@
 import { FastifyPluginCallback } from "fastify";
-import { WebSocket } from "ws";
 
+// WebSocket plugin using @fastify/websocket
+// Requires `@fastify/websocket` and `ws` as peer dependencies
 const wsPlugin: FastifyPluginCallback = async (app, _opts) => {
-  const clients = new Set<WebSocket>();
+  // Track connected clients for broadcasting
+  const clients = new Set<any>();
 
-  app.get("/ws", { websocket: true }, (socket: WebSocket) => {
+  app.get("/ws", { websocket: true }, (socket: any, req: any) => {
     clients.add(socket);
     app.log.info({ clients: clients.size }, "WebSocket client connected");
 
@@ -13,7 +15,7 @@ const wsPlugin: FastifyPluginCallback = async (app, _opts) => {
       app.log.info({ clients: clients.size }, "WebSocket client disconnected");
     });
 
-    socket.on("error", (err) => {
+    socket.on("error", (err: any) => {
       app.log.error({ err }, "WebSocket error");
       clients.delete(socket);
     });
@@ -23,7 +25,7 @@ const wsPlugin: FastifyPluginCallback = async (app, _opts) => {
   const broadcast = (type: string, data: any) => {
     const message = JSON.stringify({ type, data, timestamp: new Date().toISOString() });
     for (const client of clients) {
-      if (client.readyState === WebSocket.OPEN) {
+      if (client.readyState === 1) { // WebSocket.OPEN = 1
         client.send(message);
       }
     }
