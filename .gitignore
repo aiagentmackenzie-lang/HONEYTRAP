@@ -5,6 +5,10 @@ honeytrap
 # Go cache
 .gocache/
 
+# API
+api/dist/
+api/node_modules/
+
 # Dashboard build artifacts & deps
 dashboard/dist/
 dashboard/node_modules/

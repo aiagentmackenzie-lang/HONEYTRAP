@@ -25,6 +25,7 @@ services:
       PORT: 3000
       HOST: 0.0.0.0
       LOG_LEVEL: info
+      API_TOKEN: ${API_TOKEN:-}
     ports:
       - "3000:3000"
     depends_on:

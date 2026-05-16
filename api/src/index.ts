@@ -1,5 +1,7 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import dbPlugin from "./plugins/db.js";
+import authPlugin from "./plugins/auth.js";
 import sessionsRoute from "./routes/sessions.js";
 import eventsRoute from "./routes/events.js";
 import tokensRoute from "./routes/tokens.js";
@@ -13,7 +15,16 @@ async function buildServer() {
     }
   });
 
+  // Register CORS (allow dashboard origin)
+  await app.register(cors, { origin: true });
+
+  // Register auth middleware (bearer token if API_TOKEN is set)
+  await app.register(authPlugin);
+
+  // Register database plugin
   await app.register(dbPlugin);
+
+  // Register routes
   await app.register(sessionsRoute);
   await app.register(eventsRoute);
   await app.register(tokensRoute);

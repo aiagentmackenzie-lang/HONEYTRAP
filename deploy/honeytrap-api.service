@@ -13,6 +13,7 @@ ExecStart=/usr/bin/node dist/index.js
 Environment=NODE_ENV=production
 Environment=PORT=3000
 Environment=HOST=0.0.0.0
+Environment=API_TOKEN=%i
 Restart=on-failure
 RestartSec=5
 

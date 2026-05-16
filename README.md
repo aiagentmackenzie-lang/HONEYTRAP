@@ -136,6 +136,7 @@ go build ./cmd/honeytrap
 | `HONEYTRAP_UDP_PORT` | 9161 | UDP decoy port |
 | `HONEYTRAP_AI_URL` | `http://localhost:8443` | AI emulator URL |
 | `HONEYTRAP_PROFILES_DIR` | `profiles` | Deploy profile directory |
+| `API_TOKEN` | _(empty)_ | Bearer token for API auth (empty = dev mode, no auth) |
 
 ### Docker
 
