@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"text/tabwriter"
 
+
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/engine"
 )
@@ -56,25 +57,7 @@ func (r *Runner) Run(ctx context.Context, args []string) error {
 }
 
 func (r *Runner) deploy(ctx context.Context, profileName string) error {
-	// Try to load and apply deploy profile
-	profile, err := config.LoadProfile(profileName)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "honeytrap: warning: %v (using env config)\n", err)
-	} else {
-		fmt.Printf("Deploying HONEYTRAP profile %q\n", profileName)
-		// Log profile details
-		for name, svc := range profile.Services {
-			if svc.Enabled {
-				fmt.Printf("  ✓ %s (port %d)\n", name, svc.Port)
-			}
-		}
-		if profile.AI.Enabled {
-			fmt.Printf("  ✓ AI emulation (model=%s)\n", profile.AI.Model)
-		}
-		if profile.Logging.PCAPCapture {
-			fmt.Printf("  ✓ PCAP capture enabled\n")
-		}
-	}
+	fmt.Printf("Deploying HONEYTRAP profile %q\n", profileName)
 
 	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -122,18 +105,15 @@ func (r *Runner) help() error {
 	_, err := fmt.Fprintln(os.Stdout, `HONEYTRAP — AI-Powered Deception Framework
 
 Commands:
-  deploy [profile]   Start the core honeypot engine
+  deploy [profile]   Start the core honeypot engine with optional profile
   profiles           List available deploy profiles
   status             Show configured listeners
   sessions [limit]   Print recent captured sessions as JSON
   events [limit]     Print recent captured events as JSON
   version            Print CLI version
 
-NOTE: The deploy command currently runs with environment-based config.
-Profile port/service overrides are logged but not yet wired to the
-engine at runtime. Set HONEYTRAP_* environment variables to configure
-services individually. A future release will merge profile settings
-into the running engine.`)
+Deploy profiles override HONEYTRAP_* environment variables for service
+ports, enabled flags, and AI settings. Without a profile, env vars are used.`)
 	return err
 }
 

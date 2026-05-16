@@ -100,6 +100,53 @@ func (c Config) EventLogPath() string {
 	return fmt.Sprintf("%s/events.jsonl", c.DataDir)
 }
 
+// ApplyProfile merges a DeployProfile's settings into a Config.
+// Profile values override env-var defaults for ports, enabled flags, AI URL, etc.
+func ApplyProfile(cfg *Config, profile *DeployProfile) *Config {
+	// Build a lookup map for existing services by name
+	svcMap := make(map[string]*ServiceConfig, len(cfg.Services))
+	for i := range cfg.Services {
+		svcMap[cfg.Services[i].Name] = &cfg.Services[i]
+	}
+
+	// Apply profile service settings
+	for name, svc := range profile.Services {
+		engineName := normalizeServiceName(name)
+		existing, ok := svcMap[engineName]
+		if !ok {
+			// Add new service from profile
+			protocol := "tcp"
+			if engineName == "udp-decoy" {
+				protocol = "udp"
+			}
+			cfg.Services = append(cfg.Services, ServiceConfig{
+				Name:     engineName,
+				Protocol: protocol,
+				Address:  fmt.Sprintf(":%d", svc.Port),
+				Enabled:  svc.Enabled,
+			})
+			// Update map for future lookups
+			svcMap[engineName] = &cfg.Services[len(cfg.Services)-1]
+		} else {
+			// Override port if set in profile
+			if svc.Port > 0 {
+				existing.Address = fmt.Sprintf(":%d", svc.Port)
+			}
+			// Override enabled flag
+			existing.Enabled = svc.Enabled
+		}
+	}
+
+	// Apply AI settings
+	if profile.AI.Enabled {
+		if profile.AI.OllamaURL != "" {
+			os.Setenv("HONEYTRAP_AI_URL", profile.AI.OllamaURL)
+		}
+	}
+
+	return cfg
+}
+
 func (c Config) StartedAt() time.Time {
 	return time.Now().UTC()
 }

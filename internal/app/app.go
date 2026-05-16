@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/cli"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
@@ -13,10 +15,19 @@ type App struct {
 	runner *cli.Runner
 }
 
-func New() (*App, error) {
+func New(profileName string) (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err
+	}
+
+	if profileName != "" {
+		profile, err := config.LoadProfile(profileName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "honeytrap: warning: %v\n", err)
+		} else {
+			cfg = *config.ApplyProfile(&cfg, profile)
+		}
 	}
 
 	repo, err := storage.NewMemoryRepository(cfg.SessionLogPath(), cfg.EventLogPath())

@@ -15,7 +15,6 @@
 
 ### Known Limitations
 
-- **Deploy profiles are informational only** — loading a profile with `honeytrap deploy <profile>` logs the profile details but does not currently reconfigure running services. Services are configured via `HONEYTRAP_*` environment variables. Full profile-to-engine wiring is planned for a future release.
 - **Go engine → Dashboard data gap** — The Go honeypot engine writes sessions/events to in-memory JSONL files. The Fastify API reads from PostgreSQL. These are separate data paths with no bridge currently. To use the dashboard, use the Fastify API exclusively, or pipe JSONL data into PostgreSQL.
 - **No `tokens` or `export` CLI commands** — token generation and STIX export exist as Go packages but are not yet wired to CLI subcommands. Use the API (`POST /tokens`, `GET /analytics`) or the Go packages directly.
 
@@ -226,7 +225,7 @@ YAML-based deployment configurations:
 | **corporate-internal** | SSH + HTTP + FTP | ✅ | Windows/AD environment |
 
 ```bash
-./honeytrap deploy default    # prints profile, uses env vars for config
+./honeytrap deploy default    # applies profile ports/settings to engine config
 ./honeytrap profiles          # lists available profiles
 ```
 
