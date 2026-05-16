@@ -16,5 +16,9 @@ dashboard/node_modules/
 # Data files
 var/
 
+# Decoys (fake credentials — don't commit)
+decoys/fake-*
+!decoys/README.md
+
 # OS
 .DS_Store
