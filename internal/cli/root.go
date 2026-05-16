@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"syscall"
 	"text/tabwriter"
-
+	"time"
 
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/engine"
@@ -61,7 +61,24 @@ func (r *Runner) deploy(ctx context.Context, profileName string) error {
 
 	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return r.engine.Run(runCtx)
+
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- r.engine.Run(runCtx)
+	}()
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-runCtx.Done():
+		fmt.Fprintln(os.Stderr, "honeytrap: shutting down gracefully...")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := r.engine.Shutdown(shutdownCtx); err != nil {
+			fmt.Fprintf(os.Stderr, "honeytrap: shutdown error: %v\n", err)
+		}
+		return <-errCh
+	}
 }
 
 func (r *Runner) listProfiles() error {
