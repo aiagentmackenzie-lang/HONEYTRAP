@@ -228,8 +228,8 @@ func dispatchRedisCommand(cmd string, args []string) string {
 	case "TTL":
 		return ":-1\r\n"
 	case "HELLO":
-		// RESP3 handshake — respond with minimal HELLO
-		return "%7\r\n$6\r\nserver\r\n$5\r\nredis\r\n$7\r\nversion\r\n$5\r\n7.2.3\r\n$5\r\nproto\r\n:2\r\n$2\r\nid\r\n:42\r\n$4\r\nmode\r\n$10\r\nstandalone\r\n"
+		// Decline RESP3 negotiation — we only support RESP2
+		return "-ERR NOPROTO sorry this protocol version is not supported\r\n"
 	case "QUIT":
 		return "+OK\r\n"
 	default:
