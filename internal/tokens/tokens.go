@@ -1,11 +1,13 @@
 package tokens
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"sync"
 	"time"
+
+	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
 )
 
 // Kind represents the type of honeytoken.
@@ -31,6 +33,20 @@ type Token struct {
 	Active          bool           `json:"active"`
 	CreatedAt       time.Time      `json:"created_at"`
 	Metadata        map[string]any `json:"metadata,omitempty"`
+}
+
+// ToModel converts a tokens.Token to a models.Token for storage/STIX consistency.
+func (t Token) ToModel() models.Token {
+	return models.Token{
+		ID:              t.ID,
+		Name:            t.Name,
+		Kind:            string(t.Kind),
+		Value:           t.Value,
+		Description:     t.Description,
+		FirstAccessedAt: t.FirstAccessedAt,
+		LastAccessedAt:  t.LastAccessedAt,
+		Metadata:        t.Metadata,
+	}
 }
 
 // Generator creates realistic-looking honeytokens.
@@ -120,6 +136,7 @@ func generateTokenID() string {
 
 // Store manages honeytokens with access tracking.
 type Store struct {
+	mu     sync.RWMutex
 	tokens map[string]Token
 }
 
@@ -132,17 +149,23 @@ func NewStore() *Store {
 
 // Add stores a token in the store.
 func (s *Store) Add(token Token) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.tokens[token.ID] = token
 }
 
 // Get retrieves a token by ID.
 func (s *Store) Get(id string) (Token, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	t, ok := s.tokens[id]
 	return t, ok
 }
 
 // GetByValue retrieves a token by its value (for access detection).
 func (s *Store) GetByValue(value string) (Token, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, t := range s.tokens {
 		if t.Value == value {
 			return t, true
@@ -153,6 +176,8 @@ func (s *Store) GetByValue(value string) (Token, bool) {
 
 // List returns all tokens, optionally filtered by kind and active status.
 func (s *Store) List(kind Kind, activeOnly bool) []Token {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	result := make([]Token, 0)
 	for _, t := range s.tokens {
 		if kind != "" && t.Kind != kind {
@@ -167,7 +192,9 @@ func (s *Store) List(kind Kind, activeOnly bool) []Token {
 }
 
 // RecordAccess marks a token as accessed, triggering an alert.
-func (s *Store) RecordAccess(ctx context.Context, tokenID string) (Token, error) {
+func (s *Store) RecordAccess(ctx interface{}, tokenID string) (Token, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	t, ok := s.tokens[tokenID]
 	if !ok {
 		return Token{}, fmt.Errorf("token %s not found", tokenID)
@@ -183,6 +210,8 @@ func (s *Store) RecordAccess(ctx context.Context, tokenID string) (Token, error)
 
 // Deactivate marks a token as inactive.
 func (s *Store) Deactivate(tokenID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	t, ok := s.tokens[tokenID]
 	if !ok {
 		return fmt.Errorf("token %s not found", tokenID)

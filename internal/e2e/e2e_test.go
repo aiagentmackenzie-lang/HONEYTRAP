@@ -97,7 +97,7 @@ func TestE2E_TokenSTIXExport(t *testing.T) {
 		{
 			ID:              "t-e2e-1",
 			Name:            "AWS Key",
-			Kind:            "aws-creds",
+			Kind:            string(tokens.KindAWSCreds),
 			Value:           "AKIADEADBEEF12345678",
 			FirstAccessedAt: &now,
 			LastAccessedAt:  &now,
