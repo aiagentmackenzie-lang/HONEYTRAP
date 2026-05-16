@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -150,6 +151,12 @@ func ListProfiles() ([]string, error) {
 
 func expandEnv(s *string) {
 	if s != nil && *s != "" {
-		*s = os.ExpandEnv(*s)
+		*s = os.Expand(*s, func(key string) string {
+			// Only expand HONEYTRAP_-prefixed environment variables
+			if strings.HasPrefix(key, "HONEYTRAP_") {
+				return os.Getenv(key)
+			}
+			return "$" + key // Leave non-HONEYTRAP vars unexpanded
+		})
 	}
 }
