@@ -29,9 +29,10 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 		return fmt.Errorf("http-enhanced service requires a TCP connection")
 	}
 
-	_ = ctx.Conn.SetDeadline(time.Now().Add(ctx.Deadline))
-
 	for {
+		// Per-request read deadline instead of per-connection
+		_ = ctx.Conn.SetReadDeadline(time.Now().Add(ctx.Deadline))
+
 		req, err := http.ReadRequest(bufio.NewReader(ctx.Conn))
 		if err != nil {
 			if err == io.EOF {
@@ -42,6 +43,9 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 
 		body, _ := io.ReadAll(io.LimitReader(req.Body, 16384))
 		req.Body.Close() // close inside loop, not defer — prevents FD leak
+
+		// Check Connection header
+		keepAlive := !strings.EqualFold(req.Header.Get("Connection"), "close")
 
 		// Capture POST data (credentials)
 		event := map[string]any{
@@ -72,9 +76,14 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 		// Route to appropriate fake page
 		html := routeFakePage(req.URL.Path, req.Method, body)
 
+		connHeader := "keep-alive"
+		if !keepAlive {
+			connHeader = "close"
+		}
 		response := fmt.Sprintf(
-			"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: %d\r\nConnection: keep-alive\r\nServer: nginx/1.24.0\r\nX-Request-ID: %s\r\n\r\n%s",
+			"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: %d\r\nConnection: %s\r\nServer: nginx/1.24.0\r\nX-Request-ID: %s\r\n\r\n%s",
 			len(html),
+			connHeader,
 			ctx.Session.ID,
 			html,
 		)
@@ -82,6 +91,11 @@ func (s *EnhancedHTTPService) HandleConn(ctx *SessionContext) error {
 		_, err = io.Copy(ctx.Conn, bytes.NewBufferString(response))
 		if err != nil {
 			return err
+		}
+
+		// If client sent Connection: close, break the loop
+		if !keepAlive {
+			return nil
 		}
 	}
 }
