@@ -20,6 +20,19 @@ import (
 
 const defaultMaxSessionsPerService = 500
 
+// udpSessionTTL is how long to reuse an existing UDP session before creating a new one.
+const udpSessionTTL = 5 * time.Minute
+
+type udpSessionKey struct {
+	service string
+	ip      string
+}
+
+type udpSessionEntry struct {
+	sessionID string
+	lastSeen time.Time
+}
+
 type Engine struct {
 	cfg          config.Config
 	repo         storage.Repository
@@ -35,6 +48,9 @@ type Engine struct {
 
 	// mu protects listeners and packetConns from concurrent append/read
 	mu sync.Mutex
+
+	// udpSessions tracks active UDP sessions for deduplication
+	udpSessions sync.Map // udpSessionKey -> udpSessionEntry
 }
 
 func New(cfg config.Config, repo storage.Repository) *Engine {
@@ -312,11 +328,42 @@ func (e *Engine) serveUDP(ctx context.Context, cfg config.ServiceConfig, service
 }
 
 func (e *Engine) handleUDP(ctx context.Context, cfg config.ServiceConfig, service services.Service, packetConn net.PacketConn, addr net.Addr, payload []byte) {
-	session, err := e.sessions.Open(ctx, cfg.Name, cfg.Protocol, addr, map[string]any{"listener": cfg.Address, "size": len(payload)})
+	ip := extractIPFromAddr(addr)
+	key := udpSessionKey{service: cfg.Name, ip: ip}
+
+	// Check for existing session to deduplicate
+	var session models.Session
+	now := time.Now()
+	if entry, ok := e.udpSessions.Load(key); ok {
+		entry := entry.(udpSessionEntry)
+		if now.Sub(entry.lastSeen) < udpSessionTTL {
+			// Reuse existing session
+			session = models.Session{ID: entry.sessionID, Service: cfg.Name, Protocol: "udp", RemoteAddr: addr.String(), RemoteIP: ip}
+			_ = e.sessions.Event(ctx, session, "udp.datagram", map[string]any{"size": len(payload), "payload_preview": string(payload)})
+			e.udpSessions.Store(key, udpSessionEntry{sessionID: entry.sessionID, lastSeen: now})
+			_ = service.HandlePacket(&services.PacketContext{
+				Context:    ctx,
+				Service:    cfg.Name,
+				RemoteAddr: addr,
+				Payload:    payload,
+				Recorder:   e.sessions,
+				Write: func(data []byte) error {
+					_, err := packetConn.WriteTo(data, addr)
+					return err
+				},
+			})
+			return
+		}
+	}
+
+	// No active session or expired — create new one
+	var err error
+	session, err = e.sessions.Open(ctx, cfg.Name, "udp", addr, map[string]any{"listener": cfg.Address, "size": len(payload)})
 	if err != nil {
 		return
 	}
-	defer func() { _ = e.sessions.Close(context.Background(), session.ID) }()
+
+	e.udpSessions.Store(key, udpSessionEntry{sessionID: session.ID, lastSeen: now})
 
 	_ = e.sessions.Event(ctx, session, "udp.received", map[string]any{"size": len(payload), "payload_preview": string(payload)})
 	_ = service.HandlePacket(&services.PacketContext{
@@ -331,4 +378,12 @@ func (e *Engine) handleUDP(ctx context.Context, cfg config.ServiceConfig, servic
 		},
 	})
 	_ = e.sessions.Event(ctx, session, "session.closed", map[string]any{"service": cfg.Name})
+}
+
+func extractIPFromAddr(addr net.Addr) string {
+	host, _, err := net.SplitHostPort(addr.String())
+	if err == nil {
+		return host
+	}
+	return addr.String()
 }
