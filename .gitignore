@@ -20,5 +20,9 @@ var/
 decoys/fake-*
 !decoys/README.md
 
+# Project management
+BUG_LOG.md
+CONTINUATION_PROMPT.md
+
 # OS
 .DS_Store
