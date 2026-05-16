@@ -15,7 +15,6 @@
 
 ### Known Limitations
 
-- **Go engine → Dashboard data gap** — The Go honeypot engine writes sessions/events to in-memory JSONL files. The Fastify API reads from PostgreSQL. These are separate data paths with no bridge currently. To use the dashboard, use the Fastify API exclusively, or pipe JSONL data into PostgreSQL.
 - **No `tokens` or `export` CLI commands** — token generation and STIX export exist as Go packages but are not yet wired to CLI subcommands. Use the API (`POST /tokens`, `GET /analytics`) or the Go packages directly.
 
 ---
@@ -136,6 +135,7 @@ go build ./cmd/honeytrap
 | `HONEYTRAP_UDP_PORT` | 9161 | UDP decoy port |
 | `HONEYTRAP_AI_URL` | `http://localhost:8443` | AI emulator URL |
 | `HONEYTRAP_PROFILES_DIR` | `profiles` | Deploy profile directory |
+| `HONEYTRAP_API_URL` | `http://localhost:3000` | API URL for JSONL data bridge |
 | `API_TOKEN` | _(empty)_ | Bearer token for API auth (empty = dev mode, no auth) |
 
 ### Docker
@@ -177,8 +177,9 @@ docker-compose up -d
                     │  Port 8082       │
                     └──────────────────┘
 
-⚠️ Data flow note: The Go engine and Fastify API use separate storage
-   (JSONL files vs. PostgreSQL). See "Known Limitations" above.
+⚠️ Data flow: The Go engine automatically ingests sessions and events
+   into the Fastify API via periodic POST /ingest-record calls.
+   Set HONEYTRAP_API_URL to configure the API endpoint.
 ```
 
 ---
