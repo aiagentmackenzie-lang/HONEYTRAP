@@ -2,8 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/cli"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
@@ -19,10 +17,6 @@ func New() (*App, error) {
 	cfg, err := config.Load()
 	if err != nil {
 		return nil, err
-	}
-
-	if cfg.DatabaseURL != "" {
-		fmt.Fprintln(os.Stderr, "honeytrap: warning: HONEYTRAP_DATABASE_URL is set but the Go binary uses in-memory storage. Use the Fastify API for PostgreSQL.")
 	}
 
 	repo, err := storage.NewMemoryRepository(cfg.SessionLogPath(), cfg.EventLogPath())

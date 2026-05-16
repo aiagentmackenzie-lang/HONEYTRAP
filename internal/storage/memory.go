@@ -121,7 +121,7 @@ func (r *MemoryRepository) load() error {
 }
 
 func appendJSONL(path string, value any) error {
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
 	}
@@ -135,7 +135,7 @@ func appendJSONL(path string, value any) error {
 }
 
 func rewriteJSONL[T any](path string, values []T) error {
-	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("rewrite %s: %w", path, err)
 	}

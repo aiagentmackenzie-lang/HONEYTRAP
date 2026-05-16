@@ -4,13 +4,20 @@
 
 ---
 
-## Status: ALL PHASES COMPLETE 🕸️🔥
+## Status
 
-- **Spec:** ✅ Complete (SPEC.md)
-- **Phase 1:** ✅ Core Engine — TCP/UDP listeners, SSH/HTTP/FTP emulators, CLI, PostgreSQL schema
-- **Phase 2:** ✅ AI Emulation + Tokens — Ollama AI, enhanced services, honeytokens, decoy docs
-- **Phase 3:** ✅ Dashboard + Advanced Detection — React dashboard, D3 charts, WebSocket, behavioral analysis
-- **Phase 4:** ✅ Hardening + Export — Deploy profiles, STIX export, alert integrations, seccomp, systemd
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 1 | Core Engine — TCP/UDP listeners, SSH/HTTP/FTP emulators, CLI, storage | ✅ Complete |
+| Phase 2 | AI Emulation + Tokens — Ollama AI, enhanced services, honeytokens, decoy docs | ✅ Complete |
+| Phase 3 | Dashboard + Detection — React dashboard, D3 charts, WebSocket, behavioral analysis | ✅ Complete |
+| Phase 4 | Hardening + Export — Deploy profiles, STIX export, alert integrations, seccomp, systemd | ✅ Complete |
+
+### Known Limitations
+
+- **Deploy profiles are informational only** — loading a profile with `honeytrap deploy <profile>` logs the profile details but does not currently reconfigure running services. Services are configured via `HONEYTRAP_*` environment variables. Full profile-to-engine wiring is planned for a future release.
+- **Go engine → Dashboard data gap** — The Go honeypot engine writes sessions/events to in-memory JSONL files. The Fastify API reads from PostgreSQL. These are separate data paths with no bridge currently. To use the dashboard, use the Fastify API exclusively, or pipe JSONL data into PostgreSQL.
+- **No `tokens` or `export` CLI commands** — token generation and STIX export exist as Go packages but are not yet wired to CLI subcommands. Use the API (`POST /tokens`, `GET /analytics`) or the Go packages directly.
 
 ---
 
@@ -24,15 +31,18 @@ Deploy intelligent honeypots and deception assets to detect, track, and analyze 
 
 | Attribute | Value |
 |-----------|-------|
-| **Stack** | Go + Python + Docker + React + PostgreSQL |
-| **LOC** | ~8,500+ |
-| **Phases** | 4 (Core → AI → Dashboard → Hardening) |
-| **GitHub** | `github.com/aiagentmackenzie-lang/HONEYTRAP` |
-| **Portfolio Gap** | Deception tech |
+| **Stack** | Go + Python + TypeScript + Docker + React + PostgreSQL |
+| **LOC** | ~6,800 (source), ~10,500 (including dashboard framework) |
+| **Source Files** | ~75 |
+| **Go Services** | 7 (SSH, SSH+, HTTP, HTTP+, FTP, Redis, UDP) |
+| **API Routes** | 9 (sessions, events, tokens CRUD, analytics, health, WebSocket) |
+| **Dashboard** | 13 components, 5 pages, 2 hooks |
+| **Alert Integrations** | 3 (Slack, Telegram, Email stub) |
+| **Deploy Profiles** | 5 (default, minimal, full-spectrum, raspberry-pi, corporate-internal) |
 
 ---
 
-## Services (Phase 2)
+## Services
 
 | Service | Port | Protocol | Description |
 |---------|------|----------|-------------|
@@ -44,9 +54,11 @@ Deploy intelligent honeypots and deception assets to detect, track, and analyze 
 | Redis | 6379 | TCP | Plausible keys with tempting names |
 | UDP Decoy | 9161 | UDP | Generic UDP capture |
 
+> **Port conflict:** The AI emulator defaults to port 8443 (same as HTTP Enhanced). When running both, change the AI emulator port, e.g., `python server.py 8444`, and set `HONEYTRAP_AI_URL=http://localhost:8444`.
+
 ---
 
-## AI Emulator (Phase 2)
+## AI Emulator (Python)
 
 The Python AI emulator uses Ollama for dynamic response generation:
 
@@ -56,9 +68,15 @@ The Python AI emulator uses Ollama for dynamic response generation:
 - **Intent Classification:** Automatically classifies attacker intent (recon, exploitation, lateral movement)
 - **Fallback:** Static responses when Ollama is unavailable
 
+```bash
+cd ai_emulator
+pip install -r requirements.txt    # note: also needs pytest, pytest-asyncio for tests
+python server.py 8444              # default is 8443, use 8444 to avoid conflict with HTTP+
+```
+
 ---
 
-## Honeytokens (Phase 2)
+## Honeytokens
 
 Generate and track fake credentials to detect unauthorized access:
 
@@ -73,6 +91,8 @@ Generate and track fake credentials to detect unauthorized access:
 - `decoys/fake-database-config.yml` — Fake DB config with passwords
 - `decoys/fake-api-key.env` — Planted environment variables
 
+> ⚠️ Decoy files contain realistic-looking fake credentials. Handle with care — do not commit to public repos or expose to systems that might auto-scan them.
+
 ---
 
 ## Build & Run
@@ -81,21 +101,42 @@ Generate and track fake credentials to detect unauthorized access:
 # Build the Go binary
 go build ./cmd/honeytrap
 
-# Check status
+# Check status (shows configured services)
 ./honeytrap status
 
-# Deploy honeypot
+# Deploy honeypot engine (reads HONEYTRAP_* env vars)
 ./honeytrap deploy default
 
-# View sessions
+# View sessions (JSON)
 ./honeytrap sessions
 
-# View events
+# View events (JSON)
 ./honeytrap events
 
-# Manage tokens
-./honeytrap tokens
+# List profiles
+./honeytrap profiles
+
+# Version
+./honeytrap version
 ```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `HONEYTRAP_DATA_DIR` | `var` | Directory for JSONL log files |
+| `HONEYTRAP_NODE_NAME` | `local-node` | Node identifier |
+| `HONEYTRAP_ENV` | `development` | Environment label |
+| `HONEYTRAP_PROFILE` | `default` | Deploy profile (informational) |
+| `HONEYTRAP_SSH_PORT` | 2222 | SSH listener port |
+| `HONEYTRAP_SSH_ENHANCED_PORT` | 2223 | SSH Enhanced port |
+| `HONEYTRAP_HTTP_PORT` | 8080 | HTTP listener port |
+| `HONEYTRAP_HTTP_ENHANCED_PORT` | 8443 | HTTP Enhanced port |
+| `HONEYTRAP_FTP_PORT` | 2121 | FTP listener port |
+| `HONEYTRAP_REDIS_PORT` | 6379 | Redis listener port |
+| `HONEYTRAP_UDP_PORT` | 9161 | UDP decoy port |
+| `HONEYTRAP_AI_URL` | `http://localhost:8443` | AI emulator URL |
+| `HONEYTRAP_PROFILES_DIR` | `profiles` | Deploy profile directory |
 
 ### Docker
 
@@ -103,13 +144,7 @@ go build ./cmd/honeytrap
 docker-compose up -d
 ```
 
-### AI Emulator (Python)
-
-```bash
-cd ai_emulator
-pip install -r requirements.txt
-python server.py 8443
-```
+> **Note:** The `docker-compose.yml` exposes all 7 service ports (2222, 2223, 8080, 8443, 2121, 6379, 9161/udp). The AI emulator runs on port 8444 internally (mapped to avoid conflict with HTTP Enhanced on 8443).
 
 ---
 
@@ -118,33 +153,43 @@ python server.py 8443
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   HONEYTRAP CLI                     │
-│        (deploy, status, sessions, tokens)           │
+│        (deploy, status, sessions, events)           │
 └─────────────────────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────┐
-│                 Fastify API Server                  │
-│    (sessions, events, tokens, AI-response)          │
+│              Honeypot Engine (Go)                    │
+│    TCP/UDP listeners, service emulators, sessions   │
+│    Writes: var/sessions.jsonl, var/events.jsonl     │
 └─────────────────────────────────────────────────────┘
-           │                    │                    │
-           ▼                    ▼                    ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│  Honeypot Engine │  │  Token Manager   │  │  AI Emulator     │
-│  (Go + Docker)   │  │  (PostgreSQL)    │  │  (Ollama + Python)│
-└──────────────────┘  └──────────────────┘  └──────────────────┘
-           │
-           ▼
-┌──────────────────────────────────────────────────────┐
-│  7 Services: SSH, SSH+, HTTP, HTTP+, FTP, Redis, UDP │
-└──────────────────────────────────────────────────────┘
+          │                    │
+          ▼                    ▼
+┌──────────────────┐  ┌──────────────────────────────┐
+│  AI Emulator     │  │  Fastify API Server (TS)      │
+│  (Ollama+Python) │  │  Reads: PostgreSQL            │
+│  Port 8444       │  │  Sessions, Events, Tokens,    │
+│                  │  │  Analytics, WebSocket           │
+└──────────────────┘  └──────────────────────────────┘
+                              │
+                              ▼
+                    ┌──────────────────┐
+                    │  React Dashboard │
+                    │  Port 8082       │
+                    └──────────────────┘
+
+⚠️ Data flow note: The Go engine and Fastify API use separate storage
+   (JSONL files vs. PostgreSQL). See "Known Limitations" above.
 ```
+
+---
 
 ## Dashboard (Phase 3)
 
 React + Vite + Tailwind + D3 cyberpunk dashboard:
 
 - **5 Pages:** Dashboard, Sessions, Tokens, Analytics, Settings
-- **12 Components:** StatsCards, SessionViewer, SessionDetail, AttackerMap, ServiceChart, TimelineChart, TokenList, TokenAlerts, EventLog, ServiceStatus, CredentialCapture, AIStatus
+- **13 Components:** StatsCards, SessionViewer, SessionDetail, AttackerMap, ServiceChart, TimelineChart, TokenList, TokenAlerts, EventLog, ServiceStatus, CredentialCapture, AIStatus, Sidebar
+- **2 Hooks:** useApi, useWebSocket
 - **Real-time:** WebSocket hook with auto-reconnect
 - **D3 Charts:** Bar chart (service attacks), area chart (24h timeline), world map (attacker geolocation)
 - **Dark Theme:** #0a0a1a background, #4ecca3 green accent, #e84545 alerts
@@ -155,14 +200,18 @@ cd dashboard && npm install && npm run dev
 # Proxies /api to localhost:3000
 ```
 
+---
+
 ## Behavioral Analysis (Phase 3)
 
 Go module for attacker profiling:
 
 - **IsScripted()** — Detects automated tools (uniform command intervals, CV < 0.3)
 - **IsHuman()** — Detects human attackers (variable timing, thinking pauses)
-- **ClassifyTool()** — Identifies nmap, hydra, metasploit, nikto, sqlmap, nuclei
+- **ClassifyTool()** — Identifies nmap, hydra, metasploit, nikto, sqlmap, nuclei, curl, wget
 - **RiskScore()** — 0-1 risk score (6 factors: events, tool, scripted, duration, dangerous commands, login attempts)
+
+---
 
 ## Deploy Profiles (Phase 4)
 
@@ -174,13 +223,14 @@ YAML-based deployment configurations:
 | **minimal** | SSH + HTTP | ❌ | Lightweight |
 | **full-spectrum** | All 7 + PCAP | ✅ | Maximum deception |
 | **raspberry-pi** | SSH + Redis | ❌ | Low-resource devices |
-| **corporate-internal** | SSH + HTTP + FTP | ✅ | AD/Windows environment |
+| **corporate-internal** | SSH + HTTP + FTP | ✅ | Windows/AD environment |
 
 ```bash
-./honeytrap deploy default
-./honeytrap deploy minimal
-./honeytrap deploy raspberry-pi
+./honeytrap deploy default    # prints profile, uses env vars for config
+./honeytrap profiles          # lists available profiles
 ```
+
+---
 
 ## STIX Export (Phase 4)
 
@@ -190,24 +240,38 @@ Export honeypot data as STIX 2.1 bundles for threat intel sharing:
 - Token access → indicator objects with confidence scores
 - Full STIX bundle with identity and relationship objects
 
+> **Note:** STIX export is available as a Go package (`internal/export`) but not yet wired to a CLI command. Call programmatically or via a future `export` command.
+
+---
+
 ## Alert Integrations (Phase 4)
 
 Real-time alerts when attackers interact with honeypots:
 
 - **Slack** — Webhook-based alerts with severity emojis
 - **Telegram** — Bot API with Markdown formatting
-- **Email** — SMTP/agentmail integration (structure ready)
+- **Email** — SMTP structure ready (requires agentmail or net/smtp for full integration)
 - Severity levels: low → medium → high → critical
+
+---
 
 ## Hardening (Phase 4)
 
-- **Seccomp** — Whitelist profile (150+ allowed syscalls)
+- **Seccomp** — Whitelist profile (default deny, 150+ allowed syscalls)
 - **Systemd** — Hardened service files (NoNewPrivileges, ProtectSystem, PrivateTmp)
-- **Docker** — Network isolation, read-only FS, resource limits
+- **Docker** — Network isolation, read-only FS support, resource limits
 - **Install script** — `sudo bash deploy/install.sh`
 
 ---
 
+## Version
+
+- Go CLI: `v0.4.0`
+- AI Emulator: `v0.2.0`
+- API: `v0.2.0`
+
+---
+
 **Created:** April 16, 2026  
-**Part of:** Raphael's Security Portfolio (22+ projects) 
-**Total:** ~10,500 LOC | 90+ files | 4 phases complete
+**Part of:** Security Portfolio  
+**Review:** Bug log available at `BUG_LOG.md`

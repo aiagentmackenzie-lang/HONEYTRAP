@@ -127,7 +127,13 @@ Commands:
   status             Show configured listeners
   sessions [limit]   Print recent captured sessions as JSON
   events [limit]     Print recent captured events as JSON
-  version            Print CLI version`)
+  version            Print CLI version
+
+NOTE: The deploy command currently runs with environment-based config.
+Profile port/service overrides are logged but not yet wired to the
+engine at runtime. Set HONEYTRAP_* environment variables to configure
+services individually. A future release will merge profile settings
+into the running engine.`)
 	return err
 }
 

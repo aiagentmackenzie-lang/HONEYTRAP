@@ -76,6 +76,20 @@ type LoggingProfile struct {
 	PCAPDir     string `yaml:"pcap_dir,omitempty"`
 }
 
+// normalizeServiceName maps YAML profile keys to engine service names.
+// Profiles use underscores (ssh_enhanced) while the engine uses hyphens (ssh-enhanced).
+func normalizeServiceName(key string) string {
+	mapping := map[string]string{
+		"ssh_enhanced": "ssh-enhanced",
+		"http_enhanced": "http-enhanced",
+		"udp":           "udp-decoy",
+	}
+	if mapped, ok := mapping[key]; ok {
+		return mapped
+	}
+	return key // ssh, http, ftp, redis are already correct
+}
+
 // LoadProfile reads a YAML profile from the profiles/ directory.
 func LoadProfile(name string) (*DeployProfile, error) {
 	profileDir := "profiles"
@@ -93,6 +107,13 @@ func LoadProfile(name string) (*DeployProfile, error) {
 	if err := yaml.Unmarshal(data, &profile); err != nil {
 		return nil, fmt.Errorf("invalid profile %q: %w", name, err)
 	}
+
+	// Normalize service name keys to match engine service names
+	normalized := make(map[string]ServiceProfile, len(profile.Services))
+	for k, v := range profile.Services {
+		normalized[normalizeServiceName(k)] = v
+	}
+	profile.Services = normalized
 
 	// Expand environment variables in alert configs
 	expandEnv(&profile.Alerts.Slack.WebhookURL)

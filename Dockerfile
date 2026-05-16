@@ -12,6 +12,6 @@ WORKDIR /srv/honeytrap
 COPY --from=build /out/honeytrap /usr/local/bin/honeytrap
 RUN mkdir -p /srv/honeytrap/var && chown -R honeytrap:honeytrap /srv/honeytrap
 USER honeytrap
-EXPOSE 2222 8080 2121 9161/udp
+EXPOSE 2222 2223 8080 8443 2121 6379 9161/udp
 ENTRYPOINT ["honeytrap"]
 CMD ["status"]

@@ -6,6 +6,7 @@ import (
 	"os"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -255,27 +256,49 @@ func ptrTime(t time.Time) *time.Time {
 	return &t
 }
 
-// TestE2E_SeccompProfile verifies the seccomp profile is valid JSON.
+// TestE2E_SeccompProfile verifies the actual seccomp profile file is valid JSON.
 func TestE2E_SeccompProfile(t *testing.T) {
-	data, err := json.Marshal(map[string]interface{}{
-		"defaultAction": "SCMP_ACT_ERRNO",
-		"syscalls":      []interface{}{},
-	})
+	data, err := os.ReadFile("../../docker/seccomp-honeytrap.json")
 	if err != nil {
-		t.Fatalf("Seccomp profile JSON invalid: %v", err)
+		t.Fatalf("Failed to read seccomp profile: %v", err)
 	}
-	t.Logf("✅ Seccomp profile structure valid (%d bytes)", len(data))
+
+	var profile map[string]any
+	if err := json.Unmarshal(data, &profile); err != nil {
+		t.Fatalf("Seccomp profile is invalid JSON: %v", err)
+	}
+
+	if profile["defaultAction"] != "SCMP_ACT_ERRNO" {
+		t.Errorf("Expected defaultAction SCMP_ACT_ERRNO, got %v", profile["defaultAction"])
+	}
+
+	syscalls, ok := profile["syscalls"].([]any)
+	if !ok || len(syscalls) == 0 {
+		t.Error("Expected non-empty syscalls array")
+	}
+
+	t.Logf("✅ Seccomp profile valid: defaultAction=%s, %d syscall groups", profile["defaultAction"], len(syscalls))
 }
 
-// TestE2E_SystemdServices verifies service files exist.
+// TestE2E_SystemdServices verifies service files can be parsed as valid unit files.
 func TestE2E_SystemdServices(t *testing.T) {
 	services := []string{"honeytrap.service", "honeytrap-api.service", "honeytrap-ai.service"}
 	for _, svc := range services {
-		path := fmt.Sprintf("deploy/%s", svc)
-		if _, err := http.Get(path); err != nil {
-			// Just verify we can reference them (they exist in the repo)
-			t.Logf("📋 Service file: %s (exists in repo)", svc)
+		data, err := os.ReadFile(fmt.Sprintf("../../deploy/%s", svc))
+		if err != nil {
+			t.Errorf("Failed to read %s: %v", svc, err)
+			continue
 		}
+		content := string(data)
+		if !strings.Contains(content, "[Unit]") {
+			t.Errorf("%s missing [Unit] section", svc)
+		}
+		if !strings.Contains(content, "[Service]") {
+			t.Errorf("%s missing [Service] section", svc)
+		}
+		if !strings.Contains(content, "ExecStart=") {
+			t.Errorf("%s missing ExecStart directive", svc)
+		}
+		t.Logf("✅ Service file %s is valid", svc)
 	}
-	t.Log("✅ Systemd service files verified")
 }

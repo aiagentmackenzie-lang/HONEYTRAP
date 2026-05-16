@@ -11,7 +11,6 @@ import (
 type Config struct {
 	NodeName       string
 	Environment    string
-	DatabaseURL    string
 	DataDir        string
 	DefaultProfile string
 	Services       []ServiceConfig
@@ -29,7 +28,6 @@ func Load() (Config, error) {
 	cfg := Config{
 		NodeName:       getenv("HONEYTRAP_NODE_NAME", "local-node"),
 		Environment:    getenv("HONEYTRAP_ENV", "development"),
-		DatabaseURL:    os.Getenv("HONEYTRAP_DATABASE_URL"),
 		DataDir:        dataDir,
 		DefaultProfile: getenv("HONEYTRAP_PROFILE", "default"),
 		Services: []ServiceConfig{

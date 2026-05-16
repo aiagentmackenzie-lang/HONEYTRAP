@@ -32,6 +32,9 @@ type Engine struct {
 	connCount    map[string]*atomic.Int64
 	maxSessions  map[string]int64
 	shutdownOnce sync.Once
+
+	// mu protects listeners and packetConns from concurrent append/read
+	mu sync.Mutex
 }
 
 func New(cfg config.Config, repo storage.Repository) *Engine {
@@ -144,11 +147,18 @@ func (e *Engine) Run(ctx context.Context) error {
 func (e *Engine) Shutdown(ctx context.Context) error {
 	var err error
 	e.shutdownOnce.Do(func() {
+		e.mu.Lock()
+		listeners := make([]io.Closer, len(e.listeners))
+		copy(listeners, e.listeners)
+		packetConns := make([]io.Closer, len(e.packetConns))
+		copy(packetConns, e.packetConns)
+		e.mu.Unlock()
+
 		// Close all listeners first (stop accepting new connections)
-		for _, l := range e.listeners {
+		for _, l := range listeners {
 			_ = l.Close()
 		}
-		for _, pc := range e.packetConns {
+		for _, pc := range packetConns {
 			_ = pc.Close()
 		}
 
@@ -209,7 +219,9 @@ func (e *Engine) serveTCP(ctx context.Context, cfg config.ServiceConfig, service
 	if err != nil {
 		return fmt.Errorf("listen %s %s: %w", cfg.Name, cfg.Address, err)
 	}
+	e.mu.Lock()
 	e.listeners = append(e.listeners, listener)
+	e.mu.Unlock()
 
 	go func() {
 		<-ctx.Done()
@@ -275,7 +287,9 @@ func (e *Engine) serveUDP(ctx context.Context, cfg config.ServiceConfig, service
 	if err != nil {
 		return fmt.Errorf("listen %s %s: %w", cfg.Name, cfg.Address, err)
 	}
+	e.mu.Lock()
 	e.packetConns = append(e.packetConns, packetConn)
+	e.mu.Unlock()
 
 	go func() {
 		<-ctx.Done()

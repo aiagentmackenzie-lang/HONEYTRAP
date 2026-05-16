@@ -55,6 +55,12 @@ func (s *RedisService) HandleConn(ctx *SessionContext) error {
 				"command": command,
 				"protocol": "inline",
 			})
+
+			// Log AUTH commands specifically for credential tracking (inline)
+			if strings.HasPrefix(strings.ToUpper(command), "AUTH ") {
+				_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.auth", map[string]any{"username": strings.TrimSpace(command[5:]), "password_provided": true})
+			}
+
 			response := handleRedisCommand(command)
 			if _, err := fmt.Fprint(ctx.Conn, response); err != nil {
 				return err
@@ -74,6 +80,11 @@ func (s *RedisService) HandleConn(ctx *SessionContext) error {
 			eventPayload["args"] = args
 		}
 		_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.command", eventPayload)
+
+		// Log AUTH commands specifically for credential tracking
+		if strings.EqualFold(cmd, "AUTH") && len(args) > 0 {
+			_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.auth", map[string]any{"username": args[0], "password_provided": len(args) > 1})
+		}
 
 		response := dispatchRedisCommand(cmd, args)
 		if _, err := fmt.Fprint(ctx.Conn, response); err != nil {

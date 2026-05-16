@@ -48,8 +48,11 @@ func (s *FTPService) HandleConn(ctx *SessionContext) error {
 		upper := strings.ToUpper(command)
 		switch {
 		case strings.HasPrefix(upper, "USER "):
+			username := strings.TrimSpace(command[5:])
+			_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "ftp.login", map[string]any{"username": username})
 			_, _ = fmt.Fprint(ctx.Conn, "331 Username OK, need password\r\n")
 		case strings.HasPrefix(upper, "PASS "):
+			_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "ftp.password", map[string]any{"password": "(redacted)"})
 			_, _ = fmt.Fprint(ctx.Conn, "230 Login successful\r\n")
 		case upper == "PWD":
 			_, _ = fmt.Fprint(ctx.Conn, `257 "/srv/backups" is the current directory`+"\r\n")
