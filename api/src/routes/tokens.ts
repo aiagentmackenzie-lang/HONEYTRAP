@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { z } from "zod";
 
 interface Token {
   id: string;
@@ -22,10 +23,27 @@ interface TokenAccessLog {
   metadata: Record<string, unknown>;
 }
 
+const tokenListQuerySchema = z.object({
+  kind: z.string().optional(),
+  active: z.enum(["true", "false"]).optional(),
+});
+
+const createTokenSchema = z.object({
+  name: z.string().min(1),
+  kind: z.string().min(1),
+  value: z.string().min(1),
+  description: z.string().optional(),
+});
+
 export default async function tokensRoutes(app: FastifyInstance) {
   // GET /tokens — List all honeytokens
   app.get("/tokens", async (request: FastifyRequest, reply: FastifyReply) => {
-    const { kind, active } = request.query as { kind?: string; active?: string };
+    const parsed = tokenListQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      reply.code(400);
+      return { error: "Invalid query parameters", details: parsed.error.errors };
+    }
+    const { kind, active } = parsed.data;
     
     // Build query with combined filters instead of overwriting
     const conditions: string[] = [];
@@ -38,6 +56,8 @@ export default async function tokensRoutes(app: FastifyInstance) {
     }
     if (active === "true") {
       conditions.push(`is_active = true`);
+    } else if (active === "false") {
+      conditions.push(`is_active = false`);
     }
     
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
@@ -50,11 +70,12 @@ export default async function tokensRoutes(app: FastifyInstance) {
 
   // POST /tokens — Create a new honeytoken
   app.post("/tokens", async (request: FastifyRequest, reply: FastifyReply) => {
-    const body = request.body as Partial<Token>;
-    if (!body.name || !body.kind || !body.value) {
+    const parsed = createTokenSchema.safeParse(request.body);
+    if (!parsed.success) {
       reply.code(400);
-      return { error: "name, kind, and value are required" };
+      return { error: "Invalid request body", details: parsed.error.errors };
     }
+    const body = parsed.data;
     const result = await app.db.query(
       `INSERT INTO tokens (name, kind, value, description, is_active)
        VALUES ($1, $2, $3, $4, true)
