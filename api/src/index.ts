@@ -7,6 +7,7 @@ import eventsRoute from "./routes/events.js";
 import tokensRoute from "./routes/tokens.js";
 import wsPlugin from "./routes/ws.js";
 import analyticsPlugin from "./routes/analytics.js";
+import ingestRoutes from "./routes/ingest.js";
 
 async function buildServer() {
   const app = Fastify({
@@ -30,6 +31,7 @@ async function buildServer() {
   await app.register(tokensRoute);
   await app.register(wsPlugin);
   await app.register(analyticsPlugin);
+  await app.register(ingestRoutes);
 
   app.get("/health", async () => ({ status: "ok", version: "0.2.0" }));
 
