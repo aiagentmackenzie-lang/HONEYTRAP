@@ -22,8 +22,8 @@ type EmulationRequest struct {
 	Protocol        string         `json:"protocol,omitempty"`
 	Context         map[string]any `json:"context,omitempty"`
 	AttackerProfile map[string]any `json:"attacker_profile,omitempty"`
-	Temperature    float64        `json:"temperature,omitempty"`
-	MaxTokens      int            `json:"max_tokens,omitempty"`
+	Temperature     float64        `json:"temperature,omitempty"`
+	MaxTokens       int            `json:"max_tokens,omitempty"`
 }
 
 // EmulationResponse is returned by the AI emulator.

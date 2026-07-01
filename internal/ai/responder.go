@@ -34,8 +34,8 @@ func (r *Responder) Generate(ctx context.Context, service string, contextData ma
 	r.mu.RUnlock()
 
 	resp, err := r.client.Generate(ctx, EmulationRequest{
-		Service:  service,
-		Context:  contextData,
+		Service: service,
+		Context: contextData,
 	})
 	if err != nil {
 		r.mu.Lock()

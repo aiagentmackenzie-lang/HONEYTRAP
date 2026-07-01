@@ -1,12 +1,16 @@
 import { FastifyPluginCallback } from "fastify";
+import websocket from "@fastify/websocket";
 
 // WebSocket plugin using @fastify/websocket
 // Requires `@fastify/websocket` and `ws` as peer dependencies
 const wsPlugin: FastifyPluginCallback = async (app, _opts) => {
+  await app.register(websocket);
+
   // Track connected clients for broadcasting
   const clients = new Set<any>();
 
-  app.get("/ws", { websocket: true }, (socket: any, req: any) => {
+  app.get("/ws", { websocket: true }, (connection: any, req: any) => {
+    const socket = connection.socket;
     clients.add(socket);
     app.log.info({ clients: clients.size }, "WebSocket client connected");
 

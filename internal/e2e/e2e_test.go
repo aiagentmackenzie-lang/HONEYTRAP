@@ -3,15 +3,15 @@ package e2e
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/analysis"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/alerts"
+	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/analysis"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/config"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/export"
 	"github.com/aiagentmackenzie-lang/HONEYTRAP/internal/models"
@@ -157,12 +157,12 @@ func TestE2E_FullPipeline(t *testing.T) {
 	// 1. Create session
 	now := time.Now()
 	session := models.Session{
-		ID:        "s-pipeline-1",
-		Service:   "SSH",
-		Protocol:  "TCP",
+		ID:         "s-pipeline-1",
+		Service:    "SSH",
+		Protocol:   "TCP",
 		RemoteAddr: "185.220.101.1:43210",
-		RemoteIP:  "185.220.101.1",
-		StartedAt: now,
+		RemoteIP:   "185.220.101.1",
+		StartedAt:  now,
 	}
 
 	// 2. Create events (nmap scan pattern)

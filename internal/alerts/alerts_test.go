@@ -25,10 +25,10 @@ func TestSessionAlert_Severity(t *testing.T) {
 
 	for _, tt := range tests {
 		session := models.Session{
-			ID:         "s-1",
-			Service:    tt.service,
-			RemoteIP:   "185.220.101.1",
-			StartedAt:  time.Now(),
+			ID:        "s-1",
+			Service:   tt.service,
+			RemoteIP:  "185.220.101.1",
+			StartedAt: time.Now(),
 		}
 		alert := mgr.SessionAlert(session)
 		if alert.Type != "session" {

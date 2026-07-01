@@ -14,9 +14,9 @@ import (
 
 // STIXBundle represents a STIX 2.1 bundle for threat intel sharing.
 type STIXBundle struct {
-	Type    string        `json:"type"`
-	ID      string        `json:"id"`
-	Objects []STIXObject  `json:"objects"`
+	Type    string       `json:"type"`
+	ID      string       `json:"id"`
+	Objects []STIXObject `json:"objects"`
 }
 
 // STIXObject is a generic STIX 2.1 object.

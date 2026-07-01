@@ -30,7 +30,7 @@ type udpSessionKey struct {
 
 type udpSessionEntry struct {
 	sessionID string
-	lastSeen time.Time
+	lastSeen  time.Time
 }
 
 type Engine struct {
@@ -63,7 +63,7 @@ func New(cfg config.Config, repo storage.Repository) *Engine {
 		"http-enhanced": services.NewEnhancedHTTPService(),
 		"ftp":           services.NewFTPService(),
 		"redis":         services.NewRedisService(),
-		"udp-decoy":    services.NewUDPDecoyService(),
+		"udp-decoy":     services.NewUDPDecoyService(),
 	}
 	for _, svc := range cfg.Services {
 		connCount[svc.Name] = &atomic.Int64{}

@@ -100,8 +100,8 @@ func TestApplyProfile(t *testing.T) {
 
 	profile := &DeployProfile{
 		Services: map[string]ServiceProfile{
-			"ssh":   {Enabled: true, Port: 9999},
-			"udp":   {Enabled: false, Port: 7777},
+			"ssh":           {Enabled: true, Port: 9999},
+			"udp":           {Enabled: false, Port: 7777},
 			"http_enhanced": {Enabled: true, Port: 443},
 		},
 		AI: AIProfile{

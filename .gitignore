@@ -16,6 +16,10 @@ dashboard/node_modules/
 # Data files
 var/
 
+# Python cache
+__pycache__/
+*.pyc
+
 # Decoys (fake credentials — don't commit)
 decoys/fake-*
 !decoys/README.md

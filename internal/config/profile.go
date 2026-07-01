@@ -30,12 +30,12 @@ type ServiceProfile struct {
 }
 
 type AIProfile struct {
-	Enabled    bool   `yaml:"enabled"`
-	OllamaURL  string `yaml:"ollama_url,omitempty"`
-	Model      string `yaml:"model,omitempty"`
-	CacheSize  int    `yaml:"cache_size,omitempty"`
-	CacheTTL   int    `yaml:"cache_ttl,omitempty"`
-	Fallback   bool   `yaml:"fallback"`
+	Enabled   bool   `yaml:"enabled"`
+	OllamaURL string `yaml:"ollama_url,omitempty"`
+	Model     string `yaml:"model,omitempty"`
+	CacheSize int    `yaml:"cache_size,omitempty"`
+	CacheTTL  int    `yaml:"cache_ttl,omitempty"`
+	Fallback  bool   `yaml:"fallback"`
 }
 
 type AlertsProfile struct {
@@ -81,7 +81,7 @@ type LoggingProfile struct {
 // Profiles use underscores (ssh_enhanced) while the engine uses hyphens (ssh-enhanced).
 func normalizeServiceName(key string) string {
 	mapping := map[string]string{
-		"ssh_enhanced": "ssh-enhanced",
+		"ssh_enhanced":  "ssh-enhanced",
 		"http_enhanced": "http-enhanced",
 		"udp":           "udp-decoy",
 	}

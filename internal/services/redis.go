@@ -52,7 +52,7 @@ func (s *RedisService) HandleConn(ctx *SessionContext) error {
 				continue
 			}
 			_ = ctx.Recorder.Event(ctx.Context, ctx.Session, "redis.command", map[string]any{
-				"command": command,
+				"command":  command,
 				"protocol": "inline",
 			})
 
@@ -322,7 +322,7 @@ func redisGet(key string) string {
 		"session:admin:token":       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.0ps3c",
 		"config:database:url":       "postgres://admin:s3cret@db.primary.internal.ops:5432/operations",
 		"secret:api:key:production": "sk-proj-REDACTED-DECOY",
-		"backup:s3:credentials":    "AKIADECOY/wJalrXUtnFEMI/DECOY",
+		"backup:s3:credentials":     "AKIADECOY/wJalrXUtnFEMI/DECOY",
 		"auth:ldap:bind_password":   "BindPassword123!",
 	}
 	if val, ok := values[strings.TrimSpace(key)]; ok {
